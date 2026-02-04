@@ -1,12 +1,12 @@
 # Document Governance System — Implementation Plan
 
-| Attribute | Value |
-|-----------|-------|
-| Document Version | 0.3.0 |
-| Created | 2026-01-26 |
-| Last Updated | 2026-01-26 |
-| Related Documents | Policy System Architecture v0.7.0, ADRs v0.3.0 |
-| Purpose | Define phased implementation approach with incremental deliverables |
+| Attribute         | Value                                                               |
+| ----------------- | ------------------------------------------------------------------- |
+| Document Version  | 0.3.0                                                               |
+| Created           | 2026-01-26                                                          |
+| Last Updated      | 2026-01-26                                                          |
+| Related Documents | Policy System Architecture v0.7.0, ADRs v0.3.0                      |
+| Purpose           | Define phased implementation approach with incremental deliverables |
 
 ---
 
@@ -28,7 +28,7 @@ Content repositories contain only content — no workflow files. All automation 
 
 ```
 Organisation
-├── policy-governance/          # Policies repo (content only)
+├── docs-policy-governance/          # Policies repo (content only)
 │   ├── policies/
 │   ├── schema/
 │   ├── metadata/
@@ -52,6 +52,7 @@ Organisation
 ```
 
 **Adding a new document type:**
+
 1. Create content repository (no workflows needed)
 2. Install Docs Bot on the repository
 3. Add configuration entry mapping repo → document type
@@ -70,21 +71,22 @@ Staff do not need GitHub accounts. All GitHub operations (creating branches, com
 
 ### Why a Service Account?
 
-| Requirement | Personal Token | OAuth | Service Account (Bot) |
-|-------------|----------------|-------|----------------------|
-| Staff don't need GitHub accounts | ✅ | ❌ | ✅ |
-| Actions attributed to a bot, not a person | ❌ | ❌ | ✅ |
-| Granular permissions (only what's needed) | ❌ | ❌ | ✅ |
-| Not tied to an individual's account | ❌ | ❌ | ✅ |
-| Can be installed on multiple repos | ❌ | ❌ | ✅ |
-| Receives webhooks for automation | ❌ | ❌ | ✅ |
-| Audit trail shows bot identity | ❌ | ❌ | ✅ |
+| Requirement                               | Personal Token | OAuth | Service Account (Bot) |
+| ----------------------------------------- | -------------- | ----- | --------------------- |
+| Staff don't need GitHub accounts          | ✅             | ❌    | ✅                    |
+| Actions attributed to a bot, not a person | ❌             | ❌    | ✅                    |
+| Granular permissions (only what's needed) | ❌             | ❌    | ✅                    |
+| Not tied to an individual's account       | ❌             | ❌    | ✅                    |
+| Can be installed on multiple repos        | ❌             | ❌    | ✅                    |
+| Receives webhooks for automation          | ❌             | ❌    | ✅                    |
+| Audit trail shows bot identity            | ❌             | ❌    | ✅                    |
 
 ### Docs Bot Configuration
 
 **Name:** `doc-governance-bot`
 
 **Permissions (GitHub App registration):**
+
 - Repository contents: Read & Write (create branches, commits)
 - Issues: Read & Write (create suggestions)
 - Pull requests: Read & Write (create, update, merge)
@@ -92,6 +94,7 @@ Staff do not need GitHub accounts. All GitHub operations (creating branches, com
 - Webhooks: Configured to send events to central service
 
 **Webhook events:**
+
 - `push` — Triggers sync, PDF generation, index update
 - `pull_request` — Triggers validation, approval routing
 - `issues` — Triggers suggestion tracking
@@ -122,6 +125,7 @@ Staff do not need GitHub accounts. All GitHub operations (creating branches, com
 ### What It Looks Like in GitHub
 
 **Commits:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ doc-governance-bot committed 2 hours ago                    │
@@ -134,6 +138,7 @@ Staff do not need GitHub accounts. All GitHub operations (creating branches, com
 ```
 
 **Pull Requests:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ doc-governance-bot wants to merge 1 commit into main        │
@@ -149,9 +154,10 @@ Staff do not need GitHub accounts. All GitHub operations (creating branches, com
 Since the bot makes all commits, we attribute actions via:
 
 1. **Commit message metadata:**
+
    ```
    Update IT-001: Add encryption exception for marketing devices
-   
+
    Authored-by: jane.smith@company.com
    Approved-by: security.team@company.com, hr.team@company.com
    Request-id: suggestion-12345
@@ -161,14 +167,74 @@ Since the bot makes all commits, we attribute actions via:
 
 3. **Audit log in Postgres** (every action logged with user, timestamp, action type)
 
+### App Definition (In Repo)
+
+To keep the Docs Bot definition versioned alongside this plan, we store the GitHub App manifest in this repository. The app is created from the manifest, ensuring consistent configuration across environments.
+
+**Location:** [docs/docs_handler/infra/github_app_manifest.json](docs/docs_handler/infra/github_app_manifest.json)
+
+**Manifest includes:**
+
+- App name, description, and public/private settings
+- Required permissions (contents, issues, pull_requests, metadata)
+- Webhook events (push, pull_request, issues, issue_comment)
+- Webhook URL placeholder (updated during deployment)
+- Setup and callback URLs for installation flow
+
 ### Setup (One-Time)
 
-1. **Register the bot** in GitHub organisation settings → Developer settings → GitHub Apps → New GitHub App
-2. **Configure permissions:** Contents (read/write), Issues (read/write), Pull Requests (read/write)
-3. **Configure webhook URL:** Point to central service endpoint
-4. **Generate private key:** Download `.pem` file
-5. **Store credentials:** Upload private key to Azure Key Vault
-6. **Install on repositories:** Install on each content repo
+**1. Update manifest with service URL:**
+
+Before creating the app, replace `REPLACE_WITH_SERVICE_URL` in the manifest with the actual deployed service URL (e.g., `https://doc-gov-service.azurecontainerapps.io`).
+
+**2. Create GitHub App from manifest:**
+
+Use the GitHub App Manifest flow to register the app:
+
+```bash
+# Navigate to: https://github.com/organizations/Wintech-Group/settings/apps/new
+
+# When prompted for manifest, paste the contents of github_app_manifest.json
+# GitHub will create the app and redirect to the configuration page
+```
+
+Alternatively, use the GitHub CLI:
+
+```bash
+gh api /organizations/Wintech-Group/app-manifests/conversions \
+  --method POST \
+  --field manifest=@docs/docs_handler/infra/github_app_manifest.json
+```
+
+**3. Generate and store private key:**
+
+- On the app configuration page, scroll to "Private keys"
+- Click "Generate a private key"
+- Download the `.pem` file
+- Upload to Azure Key Vault: `doc-governance-bot-private-key`
+- Store App ID in environment variables or Key Vault
+- Delete local copy of `.pem` file
+
+**4. Install on content repositories:**
+
+- Navigate to app settings → Install App
+- Select repositories (e.g., `docs-policy-governance`)
+- Grant permissions when prompted
+
+**5. Note credentials for service configuration:**
+
+Record the following for use in the central service:
+
+- App ID (numeric ID from app settings)
+- Installation ID (from installation URL)
+- Private key location in Key Vault
+
+**Notes:**
+
+- Private keys must never be committed to the repository
+- The manifest can be version controlled; update it before re-registering the app
+- Webhook URLs should point to the deployed central service, not localhost
+- For local development, use a tool like ngrok to expose your local service, then create a separate development app
 
 ---
 
@@ -204,13 +270,14 @@ Since staff aren't GitHub users, we track approvals ourselves:
 ```markdown
 ## Approval Status
 
-| Domain | Required Approver | Status | Approved By | Date |
-|--------|-------------------|--------|-------------|------|
-| IT | jane.smith@company.com | ✅ Approved | jane.smith@company.com | 2026-01-26 |
-| HR | hr.team@company.com | ⏳ Pending | - | - |
+| Domain | Required Approver      | Status      | Approved By            | Date       |
+| ------ | ---------------------- | ----------- | ---------------------- | ---------- |
+| IT     | jane.smith@company.com | ✅ Approved | jane.smith@company.com | 2026-01-26 |
+| HR     | hr.team@company.com    | ⏳ Pending  | -                      | -          |
 
 ---
-*Managed by Docs Bot. Do not edit manually.*
+
+_Managed by Docs Bot. Do not edit manually._
 ```
 
 **Workflow:**
@@ -233,26 +300,27 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| `policy-governance` repo | Empty content repo with folder structure |
-| `policy.schema.json` | JSON Schema for frontmatter validation |
-| `domains.yaml` | Domain definitions with owners (Azure AD emails) |
-| First policy converted | One existing PDF policy in new format |
-| Docs Bot registered | GitHub App with webhook configuration |
+| Item                          | Description                                      |
+| ----------------------------- | ------------------------------------------------ |
+| `docs-policy-governance` repo | Empty content repo with folder structure         |
+| `policy.schema.json`          | JSON Schema for frontmatter validation           |
+| `domains.yaml`                | Domain definitions with owners (Azure AD emails) |
+| First policy converted        | One existing PDF policy in new format            |
+| Docs Bot registered           | GitHub App with webhook configuration            |
 
 ### Tasks
 
-- [ ] Create `policy-governance` repository (content only, no workflows)
+- [ ] Create `docs-policy-governance` repository (content only, no workflows)
 - [ ] Create folder structure (`policies/`, `schema/`, `metadata/`, `templates/`)
 - [ ] Define JSON Schema for policy frontmatter
 - [ ] Create `domains.yaml` with initial domains and owners
 - [ ] Convert one existing policy (e.g., IT Security) to frontmatter markdown
 - [ ] Create `policy-template.md` for new policies
-- [ ] Register Docs Bot (GitHub App) with required permissions
-- [ ] Configure webhook URL (placeholder until service deployed)
+- [ ] Review and update `github_app_manifest.json` (webhook URL placeholder is OK for now)
+- [ ] Create Docs Bot from manifest using GitHub App Manifest flow
 - [ ] Generate and securely store bot private key (Azure Key Vault)
-- [ ] Install Docs Bot on `policy-governance` repository
+- [ ] Install Docs Bot on `docs-policy-governance` repository
+- [ ] Record App ID and Installation ID for service configuration
 
 ### Validation
 
@@ -272,14 +340,14 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| Central service | Deployed to Azure Container Apps |
-| Webhook endpoint | `/webhooks/github` receiving events |
-| Push handler | Validates, syncs to SharePoint, generates PDF |
-| SharePoint site | Site with pages for policies |
-| Graph API app registration | Azure AD app for SharePoint access |
-| Document type config | Mapping for `policy-governance` repo |
+| Item                       | Description                                   |
+| -------------------------- | --------------------------------------------- |
+| Central service            | Deployed to Azure Container Apps              |
+| Webhook endpoint           | `/webhooks/github` receiving events           |
+| Push handler               | Validates, syncs to SharePoint, generates PDF |
+| SharePoint site            | Site with pages for policies                  |
+| Graph API app registration | Azure AD app for SharePoint access            |
+| Document type config       | Mapping for `docs-policy-governance` repo     |
 
 ### Tasks
 
@@ -298,8 +366,8 @@ Since staff aren't GitHub users, we track approvals ourselves:
 - [ ] Implement PDF archiving logic
 - [ ] Create Archive document library for PDFs
 - [ ] Deploy service to Azure Container Apps
-- [ ] Configure Docs Bot webhook URL to point to service
-- [ ] Add policy-governance repo to document type config
+- [ ] Update Docs Bot webhook URL to point to deployed service
+- [ ] Add docs-policy-governance repo to document type config
 
 ### Validation
 
@@ -322,12 +390,12 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| Postgres schema | Tables for policies, rules, embeddings |
-| Index update handler | Updates index on push webhook |
-| Mastra tools | `query_policies`, `get_policy`, `search_rules` |
-| Embedding pipeline | Generate embeddings for rules and prose |
+| Item                 | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| Postgres schema      | Tables for policies, rules, embeddings         |
+| Index update handler | Updates index on push webhook                  |
+| Mastra tools         | `query_policies`, `get_policy`, `search_rules` |
+| Embedding pipeline   | Generate embeddings for rules and prose        |
 
 ### Tasks
 
@@ -362,12 +430,12 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| Mastra tool | `submit_suggestion` (creates GitHub Issue via Docs Bot) |
-| Mastra tool | `get_my_suggestions` (lists user's suggestions) |
-| Issue handler | Notifies policy owner on new suggestion |
-| Audit logging | Log all suggestions with user identity |
+| Item          | Description                                             |
+| ------------- | ------------------------------------------------------- |
+| Mastra tool   | `submit_suggestion` (creates GitHub Issue via Docs Bot) |
+| Mastra tool   | `get_my_suggestions` (lists user's suggestions)         |
+| Issue handler | Notifies policy owner on new suggestion                 |
+| Audit logging | Log all suggestions with user identity                  |
 
 ### Tasks
 
@@ -399,17 +467,17 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| Mastra tool | `create_change` (creates branch + PR via Docs Bot) |
-| Mastra tool | `update_change` (updates existing PR) |
-| Mastra tool | `get_pending_approvals` |
-| Mastra tool | `get_change_diff` |
-| Mastra tool | `approve_change` |
-| Mastra tool | `reject_change` |
-| PR handler | Validates schema, parses diff, adds approval table |
-| Auto-merge logic | Merges when all approvals complete |
-| Permission checking | Validate user can perform action |
+| Item                | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| Mastra tool         | `create_change` (creates branch + PR via Docs Bot) |
+| Mastra tool         | `update_change` (updates existing PR)              |
+| Mastra tool         | `get_pending_approvals`                            |
+| Mastra tool         | `get_change_diff`                                  |
+| Mastra tool         | `approve_change`                                   |
+| Mastra tool         | `reject_change`                                    |
+| PR handler          | Validates schema, parses diff, adds approval table |
+| Auto-merge logic    | Merges when all approvals complete                 |
+| Permission checking | Validate user can perform action                   |
 
 ### Tasks
 
@@ -454,12 +522,12 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| SPFx web part | Governance Assistant chat interface |
-| Canvas components | Diff viewer, policy preview, edit interface |
-| "Suggest Change" button | Quick access on policy pages |
-| Page template | Standard layout for all policy pages |
+| Item                    | Description                                 |
+| ----------------------- | ------------------------------------------- |
+| SPFx web part           | Governance Assistant chat interface         |
+| Canvas components       | Diff viewer, policy preview, edit interface |
+| "Suggest Change" button | Quick access on policy pages                |
+| Page template           | Standard layout for all policy pages        |
 
 ### Tasks
 
@@ -495,13 +563,13 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ### Deliverables
 
-| Item | Description |
-|------|-------------|
-| Review reminder job | Scheduled job for review date checks |
-| Acknowledgement tracking | SharePoint List integration |
-| All policies converted | Full policy library in new format |
-| Runbooks | Operational documentation |
-| Monitoring | Logging, alerting, dashboards |
+| Item                     | Description                          |
+| ------------------------ | ------------------------------------ |
+| Review reminder job      | Scheduled job for review date checks |
+| Acknowledgement tracking | SharePoint List integration          |
+| All policies converted   | Full policy library in new format    |
+| Runbooks                 | Operational documentation            |
+| Monitoring               | Logging, alerting, dashboards        |
 
 ### Tasks
 
@@ -530,15 +598,15 @@ Since staff aren't GitHub users, we track approvals ourselves:
 
 ## Timeline Summary
 
-| Phase | Duration | Cumulative |
-|-------|----------|------------|
-| Phase 0: Foundation | 1 week | Week 1 |
-| Phase 1: Central Service & SharePoint | 3 weeks | Week 4 |
-| Phase 2: Search & Retrieval | 2 weeks | Week 6 |
-| Phase 3: Suggestions & Notifications | 1 week | Week 7 |
-| Phase 4: Editing & Approvals | 3 weeks | Week 10 |
-| Phase 5: SharePoint Integration | 2 weeks | Week 12 |
-| Phase 6: Production Readiness | 2 weeks | Week 14 |
+| Phase                                 | Duration | Cumulative |
+| ------------------------------------- | -------- | ---------- |
+| Phase 0: Foundation                   | 1 week   | Week 1     |
+| Phase 1: Central Service & SharePoint | 3 weeks  | Week 4     |
+| Phase 2: Search & Retrieval           | 2 weeks  | Week 6     |
+| Phase 3: Suggestions & Notifications  | 1 week   | Week 7     |
+| Phase 4: Editing & Approvals          | 3 weeks  | Week 10    |
+| Phase 5: SharePoint Integration       | 2 weeks  | Week 12    |
+| Phase 6: Production Readiness         | 2 weeks  | Week 14    |
 
 **Total estimated duration: 14 weeks (~3.5 months)**
 
@@ -569,6 +637,7 @@ Phase 6: Production Readiness
 ```
 
 Phases are sequential — each builds on the previous. Limited parallelisation possible:
+
 - PDF template design can happen during Phase 0-1
 - SPFx development environment setup can happen during Phase 3-4
 - Policy conversion can begin after Phase 1 (parallel with 2-4)
@@ -577,44 +646,44 @@ Phases are sequential — each builds on the previous. Limited parallelisation p
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Graph API permission delays | Engage IT early; have fallback to static HTML if needed |
-| Embedding model performance | Benchmark early in Phase 2; have fallback model |
-| Complex diff rendering | Start with text diff; enhance incrementally |
-| User adoption | Pilot with engaged team; iterate on UX feedback |
-| Docs Bot rate limits | Implement caching; batch operations where possible |
-| Webhook reliability | Implement retry logic; dead letter queue for failed events |
-| Service availability | Deploy with multiple replicas; health checks |
+| Risk                        | Mitigation                                                 |
+| --------------------------- | ---------------------------------------------------------- |
+| Graph API permission delays | Engage IT early; have fallback to static HTML if needed    |
+| Embedding model performance | Benchmark early in Phase 2; have fallback model            |
+| Complex diff rendering      | Start with text diff; enhance incrementally                |
+| User adoption               | Pilot with engaged team; iterate on UX feedback            |
+| Docs Bot rate limits        | Implement caching; batch operations where possible         |
+| Webhook reliability         | Implement retry logic; dead letter queue for failed events |
+| Service availability        | Deploy with multiple replicas; health checks               |
 
 ---
 
 ## Success Criteria by Phase
 
-| Phase | Success Criteria |
-|-------|------------------|
-| 0 | One valid policy file in repo; Docs Bot working |
-| 1 | Merge in GitHub → appears in SharePoint automatically |
-| 2 | Agent finds relevant policies for compliance queries |
-| 3 | Staff can suggest changes; owners get notified |
-| 4 | Full edit/approve/merge cycle works via agent |
-| 5 | Complete workflow works in SharePoint UI |
-| 6 | All policies live; system in production use |
+| Phase | Success Criteria                                      |
+| ----- | ----------------------------------------------------- |
+| 0     | One valid policy file in repo; Docs Bot working       |
+| 1     | Merge in GitHub → appears in SharePoint automatically |
+| 2     | Agent finds relevant policies for compliance queries  |
+| 3     | Staff can suggest changes; owners get notified        |
+| 4     | Full edit/approve/merge cycle works via agent         |
+| 5     | Complete workflow works in SharePoint UI              |
+| 6     | All policies live; system in production use           |
 
 ---
 
 ## Open Items to Resolve Before Starting
 
-| Item | Owner | Deadline |
-|------|-------|----------|
-| SharePoint site provisioning | IT | Before Phase 1 |
-| Azure AD app registration approval | IT | Before Phase 1 |
-| GitHub organisation access | IT | Before Phase 0 |
-| PDF branding requirements | Comms/Design | Before Phase 1 |
-| Domain owners list | Policy Team | Before Phase 0 |
-| Pilot policy selection | Policy Team | Before Phase 0 |
-| Embedding model decision | Duncan | Before Phase 2 |
-| Azure Container Apps provisioning | IT | Before Phase 1 |
+| Item                               | Owner        | Deadline       |
+| ---------------------------------- | ------------ | -------------- |
+| SharePoint site provisioning       | IT           | Before Phase 1 |
+| Azure AD app registration approval | IT           | Before Phase 1 |
+| GitHub organisation access         | IT           | Before Phase 0 |
+| PDF branding requirements          | Comms/Design | Before Phase 1 |
+| Domain owners list                 | Policy Team  | Before Phase 0 |
+| Pilot policy selection             | Policy Team  | Before Phase 0 |
+| Embedding model decision           | Duncan       | Before Phase 2 |
+| Azure Container Apps provisioning  | IT           | Before Phase 1 |
 
 ---
 
@@ -622,16 +691,16 @@ Phases are sequential — each builds on the previous. Limited parallelisation p
 
 Once the platform is proven with policies, adding a new document type (e.g., SOPs) requires:
 
-| Step | Effort |
-|------|--------|
-| Create content repository | Minutes |
-| Install Docs Bot on repo | Minutes |
-| Add document type configuration | Hours |
-| Create schema for new type | Hours |
-| Create domains.yaml for new type | Hours |
-| Create agent skill for new type | Days |
-| Create SharePoint site | Hours |
-| Bulk convert existing documents | Days |
+| Step                             | Effort  |
+| -------------------------------- | ------- |
+| Create content repository        | Minutes |
+| Install Docs Bot on repo         | Minutes |
+| Add document type configuration  | Hours   |
+| Create schema for new type       | Hours   |
+| Create domains.yaml for new type | Hours   |
+| Create agent skill for new type  | Days    |
+| Create SharePoint site           | Hours   |
+| Bulk convert existing documents  | Days    |
 
 No changes to central service code required — just configuration.
 
@@ -639,8 +708,8 @@ No changes to central service code required — just configuration.
 
 ## Change Log
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 0.1.0 | 2026-01-26 | Duncan / Claude | Initial implementation plan |
-| 0.2.0 | 2026-01-26 | Duncan / Claude | Clarified Policy Bot terminology; added detailed explanation of service account approach |
-| 0.3.0 | 2026-01-26 | Duncan / Claude | Renamed to Docs Bot; replaced GitHub Actions with webhook-driven central service; updated for platform model supporting multiple document types |
+| Version | Date       | Author          | Changes                                                                                                                                         |
+| ------- | ---------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-01-26 | Duncan / Claude | Initial implementation plan                                                                                                                     |
+| 0.2.0   | 2026-01-26 | Duncan / Claude | Clarified Policy Bot terminology; added detailed explanation of service account approach                                                        |
+| 0.3.0   | 2026-01-26 | Duncan / Claude | Renamed to Docs Bot; replaced GitHub Actions with webhook-driven central service; updated for platform model supporting multiple document types |

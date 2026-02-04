@@ -1,0 +1,26 @@
+{
+  "name": "Wintech Docs Bot (Dev)",
+  "url": "https://github.com/Wintech-Group/winston-ai-mastra",
+  "hook_attributes": {
+    "url": "https://YOUR_NGROK_URL.ngrok-free.app/webhooks/github",
+    "active": true
+  },
+  "redirect_url": "http://localhost:3000/setup/callback",
+  "callback_urls": [],
+  "setup_url": "http://localhost:3000/setup",
+  "setup_on_update": true,
+  "public": false,
+  "default_permissions": {
+    "contents": "write",
+    "issues": "write",
+    "pull_requests": "write",
+    "metadata": "read"
+  },
+  "default_events": [
+    "push",
+    "pull_request",
+    "issues",
+    "issue_comment"
+  ],
+  "description": "[DEV] GitHub App for testing document governance workflows locally. DO NOT install on production content repositories."
+}

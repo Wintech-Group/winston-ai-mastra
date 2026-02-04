@@ -2,14 +2,14 @@
 
 **High-Level Design Document**
 
-| Attribute | Value |
-|-----------|-------|
-| Document Version | 0.7.0 |
-| Status | Draft |
-| Created | 2026-01-26 |
-| Last Updated | 2026-01-26 |
+| Attribute         | Value                                                                     |
+| ----------------- | ------------------------------------------------------------------------- |
+| Document Version  | 0.7.0                                                                     |
+| Status            | Draft                                                                     |
+| Created           | 2026-01-26                                                                |
+| Last Updated      | 2026-01-26                                                                |
 | Related Documents | Policy Definition Specification v0.1.0, Policy System Requirements v0.1.0 |
-| Purpose | Define the high-level architecture for the policy management system |
+| Purpose           | Define the high-level architecture for the policy management system       |
 
 ---
 
@@ -41,15 +41,15 @@
 
 **Separation of Concerns** — Each component has a single responsibility:
 
-| Concern | System |
-|---------|--------|
-| Storage & Version Control | GitHub |
-| Human Viewing | SharePoint (Native Pages + PDF) |
-| Human Interaction | Chat Agent (SPFx) + Mastra Tools |
-| Policy Retrieval | Postgres (pgvector) + Hybrid Search |
-| Workflow Automation | Central Service (webhook-driven) |
-| Identity & Permissions | Azure AD |
-| Organisational Data | People First |
+| Concern                   | System                              |
+| ------------------------- | ----------------------------------- |
+| Storage & Version Control | GitHub                              |
+| Human Viewing             | SharePoint (Native Pages + PDF)     |
+| Human Interaction         | Chat Agent (SPFx) + Mastra Tools    |
+| Policy Retrieval          | Postgres (pgvector) + Hybrid Search |
+| Workflow Automation       | Central Service (webhook-driven)    |
+| Identity & Permissions    | Azure AD                            |
+| Organisational Data       | People First                        |
 
 ### 1.2 Architecture Overview
 
@@ -180,60 +180,60 @@ rules:
 
 ## 1. Purpose
 
-This policy establishes the requirements for protecting company 
-information assets and ensuring compliance with data protection 
+This policy establishes the requirements for protecting company
+information assets and ensuring compliance with data protection
 regulations.
 
 ## 2. Scope
 
-This policy applies to all employees, contractors, and third parties 
+This policy applies to all employees, contractors, and third parties
 who access company systems or data.
 
 ## 3. Device Security
 
-All company devices must have full-disk encryption enabled. This 
-protects data in the event of device loss or theft. 
+All company devices must have full-disk encryption enabled. This
+protects data in the event of device loss or theft.
 
-If you are unsure whether your device is encrypted, contact IT Support 
+If you are unsure whether your device is encrypted, contact IT Support
 who can verify and enable encryption if needed.
 
-**Exception:** Devices used solely for public marketing content (e.g., 
-trade show display devices) may be exempted with IT Security Manager 
+**Exception:** Devices used solely for public marketing content (e.g.,
+trade show display devices) may be exempted with IT Security Manager
 approval.
 
 ## 4. Security Awareness
 
-All staff must complete annual security awareness training. This 
-training covers phishing recognition, password hygiene, and incident 
+All staff must complete annual security awareness training. This
+training covers phishing recognition, password hygiene, and incident
 reporting.
 
 New starters must complete training within their first 30 days.
 
 ## 5. Incident Reporting
 
-If you suspect a security incident, report it to security@company.com 
-as soon as possible, ideally within 24 hours. Early detection helps 
+If you suspect a security incident, report it to security@company.com
+as soon as possible, ideally within 24 hours. Early detection helps
 us contain issues before they escalate.
 
-When in doubt, report it — we would rather investigate a false alarm 
+When in doubt, report it — we would rather investigate a false alarm
 than miss a real incident.
 
 ---
 
-*Document Owner: Jane Smith, IT Security Manager*
-*Last Review: 2025-06-01*
+_Document Owner: Jane Smith, IT Security Manager_
+_Last Review: 2025-06-01_
 ```
 
 ### 2.2 Why This Format
 
-| Benefit | Explanation |
-|---------|-------------|
-| **Single source of truth** | Rules and prose live together; they cannot drift apart |
-| **Human-readable by default** | Open the file, read the policy — no assembly required |
-| **Machine-parseable** | Frontmatter YAML provides structured data for AI agents and automation |
-| **PDF generation is trivial** | Render the markdown body with metadata header |
-| **Full context for AI** | Agent loads one file and has complete understanding of the policy |
-| **Familiar format** | Frontmatter markdown is widely used (Hugo, Jekyll, Docusaurus, etc.) |
+| Benefit                       | Explanation                                                            |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| **Single source of truth**    | Rules and prose live together; they cannot drift apart                 |
+| **Human-readable by default** | Open the file, read the policy — no assembly required                  |
+| **Machine-parseable**         | Frontmatter YAML provides structured data for AI agents and automation |
+| **PDF generation is trivial** | Render the markdown body with metadata header                          |
+| **Full context for AI**       | Agent loads one file and has complete understanding of the policy      |
+| **Familiar format**           | Frontmatter markdown is widely used (Hugo, Jekyll, Docusaurus, etc.)   |
 
 ---
 
@@ -242,7 +242,7 @@ than miss a real incident.
 The content repository contains only policy content — no workflow files. All automation is handled by the central service via webhooks.
 
 ```
-policy-governance/
+docs-policy-governance/
 ├── policies/
 │   ├── IT-001-information-security.md
 │   ├── IT-002-acceptable-use.md
@@ -272,13 +272,13 @@ policy-governance/
 
 **Key Mechanisms:**
 
-| Mechanism | Purpose |
-|-----------|---------|
-| `main` branch | Published, active policies only |
-| Feature branches | Proposed changes (one branch per change) |
-| Pull Requests | Change proposals with discussion and approval |
-| Branch protection | Prevents merge without required approvals |
-| Webhooks | Delivers events to central service for automation |
+| Mechanism         | Purpose                                           |
+| ----------------- | ------------------------------------------------- |
+| `main` branch     | Published, active policies only                   |
+| Feature branches  | Proposed changes (one branch per change)          |
+| Pull Requests     | Change proposals with discussion and approval     |
+| Branch protection | Prevents merge without required approvals         |
+| Webhooks          | Delivers events to central service for automation |
 
 **Approval Routing:**
 
@@ -325,14 +325,14 @@ Each policy is published as a native SharePoint page, created/updated via Micros
 
 **Why native pages over static files:**
 
-| Aspect | Static HTML Files | Native SharePoint Pages |
-|--------|-------------------|-------------------------|
-| Search indexing | Limited | Full |
-| UX | Opens in document viewer | Native page experience |
-| Metadata | File properties only | SharePoint columns, filtering |
-| Custom viewer web part | Potentially needed | Not needed |
-| Mobile responsive | Manual | Automatic |
-| Accessibility | Manual | Built-in |
+| Aspect                 | Static HTML Files        | Native SharePoint Pages       |
+| ---------------------- | ------------------------ | ----------------------------- |
+| Search indexing        | Limited                  | Full                          |
+| UX                     | Opens in document viewer | Native page experience        |
+| Metadata               | File properties only     | SharePoint columns, filtering |
+| Custom viewer web part | Potentially needed       | Not needed                    |
+| Mobile responsive      | Manual                   | Automatic                     |
+| Accessibility          | Manual                   | Built-in                      |
 
 **Page structure:**
 
@@ -373,33 +373,36 @@ Each policy is published as a native SharePoint page, created/updated via Micros
 
 **Page metadata (SharePoint columns):**
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| PolicyID | Text | Unique identifier (IT-001) |
-| Title | Text | Policy title |
-| Version | Text | Current version number |
-| Status | Choice | Active, Draft, Under Review, Archived |
-| EffectiveDate | Date | When current version took effect |
-| ReviewDate | Date | Next scheduled review |
-| Domain | Choice | Primary domain (IT, HR, Finance, etc.) |
-| Owners | Person | Policy owners |
+| Column        | Type   | Purpose                                |
+| ------------- | ------ | -------------------------------------- |
+| PolicyID      | Text   | Unique identifier (IT-001)             |
+| Title         | Text   | Policy title                           |
+| Version       | Text   | Current version number                 |
+| Status        | Choice | Active, Draft, Under Review, Archived  |
+| EffectiveDate | Date   | When current version took effect       |
+| ReviewDate    | Date   | Next scheduled review                  |
+| Domain        | Choice | Primary domain (IT, HR, Finance, etc.) |
+| Owners        | Person | Policy owners                          |
 
 These columns enable filtering and sorting in SharePoint views.
 
 #### 4.2.3 Versioning Strategy
 
 **Current version:** Native SharePoint page (always shows latest)
+
 - URL: `/SitePages/IT-001-information-security.aspx`
 - Fully searchable
 - Updated in-place on each merge
 
 **Archived versions:** PDF only
+
 - URL: `/Archive/IT-001-information-security-v2.0.0.pdf`
 - Sufficient for audit/compliance
 - Not indexed in search (or excluded via search configuration)
 - Linked from "Version History" section on current page
 
 **Rationale:**
+
 - Archived versions are rarely accessed
 - PDF is sufficient for audit/compliance purposes
 - Avoids complexity of managing multiple versioned pages
@@ -408,21 +411,21 @@ These columns enable filtering and sorting in SharePoint views.
 
 #### 4.2.4 Native SharePoint Features Used
 
-| Function | Implementation |
-|----------|----------------|
-| Policy viewing | Native SharePoint pages |
-| PDF download | PDF files in document library |
-| Search | SharePoint search (full page content indexed) |
-| Browse/filter | Page library with metadata columns |
-| Permissions | Azure AD integration, SharePoint groups |
-| Acknowledgement tracking | SharePoint List (policy ID + user + date) |
+| Function                 | Implementation                                |
+| ------------------------ | --------------------------------------------- |
+| Policy viewing           | Native SharePoint pages                       |
+| PDF download             | PDF files in document library                 |
+| Search                   | SharePoint search (full page content indexed) |
+| Browse/filter            | Page library with metadata columns            |
+| Permissions              | Azure AD integration, SharePoint groups       |
+| Acknowledgement tracking | SharePoint List (policy ID + user + date)     |
 
 #### 4.2.5 Custom UI (Minimal)
 
-| Element | Purpose |
-|---------|---------|
-| "Suggest Change" button | On each policy page; opens chat with policy context pre-loaded |
-| Chat Agent web part | Single SPFx web part; embedded on each policy page for interaction |
+| Element                 | Purpose                                                            |
+| ----------------------- | ------------------------------------------------------------------ |
+| "Suggest Change" button | On each policy page; opens chat with policy context pre-loaded     |
+| Chat Agent web part     | Single SPFx web part; embedded on each policy page for interaction |
 
 ---
 
@@ -434,50 +437,50 @@ The chat agent is embedded in SharePoint via an SPFx web part. It uses Mastra to
 
 **Agent Capabilities:**
 
-| Capability | Example Interaction |
-|------------|---------------------|
-| Query policies | "What policies apply to contractors?" |
-| Check compliance | "Can I take my laptop and phone to China?" |
-| Submit suggestion | "I want to suggest a change to the travel policy" |
-| Check suggestion status | "What's the status of my suggestions?" |
-| View pending approvals | "Show me my pending approvals" |
-| Review changes | "Show me the diff for PR #42" |
-| Approve/reject changes | "Approve the change to rule HR-001-R003" |
-| Check policy status | "Which policies are overdue for review?" |
-| Explain rules | "Why do we require encryption on all devices?" |
+| Capability              | Example Interaction                               |
+| ----------------------- | ------------------------------------------------- |
+| Query policies          | "What policies apply to contractors?"             |
+| Check compliance        | "Can I take my laptop and phone to China?"        |
+| Submit suggestion       | "I want to suggest a change to the travel policy" |
+| Check suggestion status | "What's the status of my suggestions?"            |
+| View pending approvals  | "Show me my pending approvals"                    |
+| Review changes          | "Show me the diff for PR #42"                     |
+| Approve/reject changes  | "Approve the change to rule HR-001-R003"          |
+| Check policy status     | "Which policies are overdue for review?"          |
+| Explain rules           | "Why do we require encryption on all devices?"    |
 
 **Canvas / Artifact Area:**
 
 For complex interactions, the agent renders rich content in a canvas area:
 
-| Content Type | Use Case |
-|--------------|----------|
-| Diff viewer | Reviewing proposed changes |
-| Policy preview | Previewing edits before submission |
-| Edit interface | Making changes to rules or prose |
-| Status dashboard | Viewing multiple pending items |
-| Approval cards | Batch reviewing/approving changes |
+| Content Type     | Use Case                           |
+| ---------------- | ---------------------------------- |
+| Diff viewer      | Reviewing proposed changes         |
+| Policy preview   | Previewing edits before submission |
+| Edit interface   | Making changes to rules or prose   |
+| Status dashboard | Viewing multiple pending items     |
+| Approval cards   | Batch reviewing/approving changes  |
 
 **Mastra Tools:**
 
-| Tool | Function | Access Level |
-|------|----------|--------------|
-| `query_policies` | Hybrid search for relevant policies | All staff |
-| `search_rules` | Semantic search on rules | All staff |
-| `get_policy` | Retrieve full policy content from GitHub | All staff |
-| `get_rules_by_filter` | Filter rules by domain, severity, keywords | All staff |
-| `find_related_policies` | Traverse policy relationships | All staff |
-| `submit_suggestion` | Create GitHub Issue with suggestion | All staff |
-| `get_my_suggestions` | List user's submitted suggestions | All staff |
-| `get_pending_approvals` | List PRs awaiting user's approval | Owners / Domain owners |
-| `get_change_diff` | Retrieve diff for a PR | Owners / Domain owners |
-| `approve_change` | Approve a PR | Owners / Domain owners |
-| `reject_change` | Reject a PR with comment | Owners / Domain owners |
-| `request_changes` | Request changes on a PR | Owners / Domain owners |
-| `create_change` | Create branch + PR with proposed edits | Policy owners |
-| `update_change` | Update an existing PR | Policy owners |
-| `get_policy_status` | List policies with review status | Owners / Admins |
-| `detect_conflicts` | Analyse rules for contradictions | Owners / Admins |
+| Tool                    | Function                                   | Access Level           |
+| ----------------------- | ------------------------------------------ | ---------------------- |
+| `query_policies`        | Hybrid search for relevant policies        | All staff              |
+| `search_rules`          | Semantic search on rules                   | All staff              |
+| `get_policy`            | Retrieve full policy content from GitHub   | All staff              |
+| `get_rules_by_filter`   | Filter rules by domain, severity, keywords | All staff              |
+| `find_related_policies` | Traverse policy relationships              | All staff              |
+| `submit_suggestion`     | Create GitHub Issue with suggestion        | All staff              |
+| `get_my_suggestions`    | List user's submitted suggestions          | All staff              |
+| `get_pending_approvals` | List PRs awaiting user's approval          | Owners / Domain owners |
+| `get_change_diff`       | Retrieve diff for a PR                     | Owners / Domain owners |
+| `approve_change`        | Approve a PR                               | Owners / Domain owners |
+| `reject_change`         | Reject a PR with comment                   | Owners / Domain owners |
+| `request_changes`       | Request changes on a PR                    | Owners / Domain owners |
+| `create_change`         | Create branch + PR with proposed edits     | Policy owners          |
+| `update_change`         | Update an existing PR                      | Policy owners          |
+| `get_policy_status`     | List policies with review status           | Owners / Admins        |
+| `detect_conflicts`      | Analyse rules for contradictions           | Owners / Admins        |
 
 **Tool Access Control:**
 
@@ -516,15 +519,15 @@ Tools validate user permissions before executing:
 
 A query like "Can I take my company laptop and phone on a factory visit to China?" requires:
 
-| Step | Requirement |
-|------|-------------|
-| Concept mapping | "laptop" → "company devices", "IT equipment" |
-| Context understanding | "factory visit" → "business travel", "international travel" |
-| Location awareness | "China" → "high-risk jurisdiction", "restricted territory" |
-| Policy discovery | Find: IT Policy, Travel Policy, Security Policy, Export Compliance |
-| Rule retrieval | Find specific rules about devices + travel + jurisdictions |
-| Exception handling | Check for relevant exceptions and conditions |
-| Synthesis | Combine rules from multiple policies into coherent answer |
+| Step                  | Requirement                                                        |
+| --------------------- | ------------------------------------------------------------------ |
+| Concept mapping       | "laptop" → "company devices", "IT equipment"                       |
+| Context understanding | "factory visit" → "business travel", "international travel"        |
+| Location awareness    | "China" → "high-risk jurisdiction", "restricted territory"         |
+| Policy discovery      | Find: IT Policy, Travel Policy, Security Policy, Export Compliance |
+| Rule retrieval        | Find specific rules about devices + travel + jurisdictions         |
+| Exception handling    | Check for relevant exceptions and conditions                       |
+| Synthesis             | Combine rules from multiple policies into coherent answer          |
 
 Neither keyword search alone (misses synonyms) nor vector search alone (may miss exact terms) is sufficient. We use hybrid search plus agentic retrieval.
 
@@ -570,13 +573,13 @@ Neither keyword search alone (misses synonyms) nor vector search alone (may miss
 
 #### 4.4.3 What Gets Indexed
 
-| Content | Storage | Purpose |
-|---------|---------|---------|
-| Policy metadata | `policies` table | Fast filtering by ID, domain, status, owner |
-| Rule metadata | `rules` table | Structured queries on severity, domain |
-| Rule embeddings | `embeddings` table | Semantic search for relevant rules |
-| Prose embeddings | `embeddings` table | Semantic search in explanatory content |
-| Rule + prose text | Full-text index (tsvector) | Keyword/exact term matching |
+| Content           | Storage                    | Purpose                                     |
+| ----------------- | -------------------------- | ------------------------------------------- |
+| Policy metadata   | `policies` table           | Fast filtering by ID, domain, status, owner |
+| Rule metadata     | `rules` table              | Structured queries on severity, domain      |
+| Rule embeddings   | `embeddings` table         | Semantic search for relevant rules          |
+| Prose embeddings  | `embeddings` table         | Semantic search in explanatory content      |
+| Rule + prose text | Full-text index (tsvector) | Keyword/exact term matching                 |
 
 **Rule embedding content:**
 
@@ -584,9 +587,9 @@ Each rule is embedded with its full context for rich semantic matching:
 
 ```
 Rule IT-001-R007 (MUST, IT Domain):
-Statement: Devices taken to high-risk jurisdictions must undergo pre-travel 
+Statement: Devices taken to high-risk jurisdictions must undergo pre-travel
 security assessment.
-Rationale: Devices may be subject to inspection, seizure, or compromise in 
+Rationale: Devices may be subject to inspection, seizure, or compromise in
 certain jurisdictions.
 Exceptions: None.
 ```
@@ -597,9 +600,9 @@ Prose is chunked by paragraph/section and embedded separately:
 
 ```
 Source: IT-001, Section 3 "Device Security"
-Content: All company devices must have full-disk encryption enabled. This 
-protects data in the event of device loss or theft. If you are unsure 
-whether your device is encrypted, contact IT Support who can verify and 
+Content: All company devices must have full-disk encryption enabled. This
+protects data in the event of device loss or theft. If you are unsure
+whether your device is encrypted, contact IT Support who can verify and
 enable encryption if needed.
 ```
 
@@ -790,6 +793,7 @@ Index updates happen incrementally on merge — only the changed policy is re-in
 **Decision:** TBD — evaluating Google's new embedding model based on promising benchmarks.
 
 **Requirements:**
+
 - High quality semantic similarity for policy/compliance domain
 - Reasonable dimension size for pgvector performance
 - Available via API or self-hostable
@@ -802,21 +806,23 @@ Index updates happen incrementally on merge — only the changed policy is re-in
 
 **Single Web Part:** Policy Assistant
 
-| Feature | Description |
-|---------|-------------|
-| Chat interface | Text input, message history |
-| Canvas area | Rich content rendering (diffs, previews, forms) |
+| Feature           | Description                                                   |
+| ----------------- | ------------------------------------------------------------- |
+| Chat interface    | Text input, message history                                   |
+| Canvas area       | Rich content rendering (diffs, previews, forms)               |
 | Context awareness | Knows which policy page user is viewing (reads page metadata) |
-| Authentication | Inherits SharePoint user context |
+| Authentication    | Inherits SharePoint user context                              |
 
 **"Suggest Change" Button:**
 
 A simple button added to the page template that:
+
 1. Opens the chat agent (if collapsed)
 2. Pre-populates context: "I want to suggest a change to [Policy Name]"
 3. Agent responds with guided flow for capturing the suggestion
 
 This can be implemented as:
+
 - Part of the chat web part (button in header)
 - Separate lightweight web part
 - Native SharePoint button with JavaScript to trigger chat
@@ -829,13 +835,13 @@ All automation is handled by a central service that receives GitHub webhooks. Co
 
 #### 4.6.1 Webhook Events
 
-| Event | Trigger | Actions |
-|-------|---------|---------|
-| `push` (to main) | PR merged | Sync to SharePoint, generate PDF, update search index |
-| `pull_request` (opened) | PR created | Validate schema, identify domains, add approval table |
-| `pull_request` (synchronize) | PR updated | Re-validate, update approval table if needed |
-| `issue_comment` (created) | Comment added | Check for approval commands |
-| `issues` (opened) | Issue created | Track as suggestion, notify policy owner |
+| Event                        | Trigger       | Actions                                               |
+| ---------------------------- | ------------- | ----------------------------------------------------- |
+| `push` (to main)             | PR merged     | Sync to SharePoint, generate PDF, update search index |
+| `pull_request` (opened)      | PR created    | Validate schema, identify domains, add approval table |
+| `pull_request` (synchronize) | PR updated    | Re-validate, update approval table if needed          |
+| `issue_comment` (created)    | Comment added | Check for approval commands                           |
+| `issues` (opened)            | Issue created | Track as suggestion, notify policy owner              |
 
 #### 4.6.2 Service Architecture
 
@@ -866,9 +872,9 @@ All automation is handled by a central service that receives GitHub webhooks. Co
 │  ┌─────────────────────────────────────────────────────────────┐    │
 │  │ Configuration: Repo → Document Type Mapping                  │    │
 │  │                                                              │    │
-│  │  company/policy-governance  →  type: policies               │    │
-│  │  company/sop-library        →  type: sops                   │    │
-│  │  company/tech-docs          →  type: tech-docs              │    │
+│  │  company/docs-policy-governance  →  type: policies               │    │
+│  │  company/docs-sop-library        →  type: sops                   │    │
+│  │  company/docs-tech          →  type: tech-docs              │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │                                                                      │
 │  ┌─────────────────────────────────────────────────────────────┐    │
@@ -977,23 +983,23 @@ When a PR is opened or updated:
 
 **Graph API operations:**
 
-| Operation | API Endpoint | Purpose |
-|-----------|--------------|---------|
-| Check page exists | `GET /sites/{site-id}/pages` | Determine create vs update |
-| Create page | `POST /sites/{site-id}/pages` | New policy |
-| Update page | `PATCH /sites/{site-id}/pages/{page-id}` | Policy update |
-| Set metadata | Page properties in create/update | Populate SharePoint columns |
-| Add web part | `POST .../pages/{page-id}/webParts` | Add chat agent to new pages |
+| Operation         | API Endpoint                             | Purpose                     |
+| ----------------- | ---------------------------------------- | --------------------------- |
+| Check page exists | `GET /sites/{site-id}/pages`             | Determine create vs update  |
+| Create page       | `POST /sites/{site-id}/pages`            | New policy                  |
+| Update page       | `PATCH /sites/{site-id}/pages/{page-id}` | Policy update               |
+| Set metadata      | Page properties in create/update         | Populate SharePoint columns |
+| Add web part      | `POST .../pages/{page-id}/webParts`      | Add chat agent to new pages |
 
 #### 4.6.6 Benefits of Webhook-Driven Approach
 
-| Benefit | Explanation |
-|---------|-------------|
-| Zero duplication | All automation logic in one place |
-| Simple onboarding | New document type = install GitHub App + add config |
-| Atomic updates | Change logic once, applies to all repos |
-| Platform model | Content repos are pure content |
-| Centralised logging | All events processed through single service |
+| Benefit             | Explanation                                         |
+| ------------------- | --------------------------------------------------- |
+| Zero duplication    | All automation logic in one place                   |
+| Simple onboarding   | New document type = install GitHub App + add config |
+| Atomic updates      | Change logic once, applies to all repos             |
+| Platform model      | Content repos are pure content                      |
+| Centralised logging | All events processed through single service         |
 
 ---
 
@@ -1203,91 +1209,91 @@ When a PR is opened or updated:
 
 ## 6. Key Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| One file per policy | Conceptual integrity; single source of truth; full context for AI agents |
-| Frontmatter markdown | Machine-readable (YAML) + human-readable (prose) in one file |
-| JSON Schema for validation | Industry standard; tooling available; enforces frontmatter structure |
-| GitHub Issues for suggestions | Low barrier; doesn't require branch knowledge |
-| PRs for actual changes | Full review workflow; required approvals; merge protection |
-| Webhook-driven automation | Zero duplication; new doc type = install App + config; centralised logic |
-| Agent-first interaction | Minimises custom UI; natural language interface; flexible |
-| Single SPFx web part | Chat + canvas covers all use cases; minimal development/maintenance |
-| "Suggest Change" button | Quick access to most common workflow; accessibility for all staff |
-| Native SharePoint pages | Full search indexing; native UX; no custom viewer needed |
-| Versioning via PDF archive | Simple; sufficient for audit; avoids search pollution |
-| Hybrid search (vector + keyword) | Captures both semantic similarity and exact policy terms |
-| pgvector in Postgres | Leverages existing Mastra infrastructure; no additional services |
-| Full policy loading | Token cost negligible; context quality significantly better |
-| Incremental index updates | Only re-index changed policy on merge; efficient |
-| Fallback to SharePoint links | If search fails, direct user to browse policies with relevant links |
+| Decision                         | Rationale                                                                |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| One file per policy              | Conceptual integrity; single source of truth; full context for AI agents |
+| Frontmatter markdown             | Machine-readable (YAML) + human-readable (prose) in one file             |
+| JSON Schema for validation       | Industry standard; tooling available; enforces frontmatter structure     |
+| GitHub Issues for suggestions    | Low barrier; doesn't require branch knowledge                            |
+| PRs for actual changes           | Full review workflow; required approvals; merge protection               |
+| Webhook-driven automation        | Zero duplication; new doc type = install App + config; centralised logic |
+| Agent-first interaction          | Minimises custom UI; natural language interface; flexible                |
+| Single SPFx web part             | Chat + canvas covers all use cases; minimal development/maintenance      |
+| "Suggest Change" button          | Quick access to most common workflow; accessibility for all staff        |
+| Native SharePoint pages          | Full search indexing; native UX; no custom viewer needed                 |
+| Versioning via PDF archive       | Simple; sufficient for audit; avoids search pollution                    |
+| Hybrid search (vector + keyword) | Captures both semantic similarity and exact policy terms                 |
+| pgvector in Postgres             | Leverages existing Mastra infrastructure; no additional services         |
+| Full policy loading              | Token cost negligible; context quality significantly better              |
+| Incremental index updates        | Only re-index changed policy on merge; efficient                         |
+| Fallback to SharePoint links     | If search fails, direct user to browse policies with relevant links      |
 
 ---
 
 ## 7. Security & Permissions
 
-| Actor | Chat Agent Access | SharePoint Access |
-|-------|-------------------|-------------------|
-| Any Staff | Query; suggest; view own suggestions | Read policy pages |
-| Policy Owner | + Edit; create changes | Read policy pages |
-| Domain Owner | + Approve/reject domain rules | Read policy pages |
-| Admin | Full tool access | Full SharePoint access |
+| Actor        | Chat Agent Access                    | SharePoint Access      |
+| ------------ | ------------------------------------ | ---------------------- |
+| Any Staff    | Query; suggest; view own suggestions | Read policy pages      |
+| Policy Owner | + Edit; create changes               | Read policy pages      |
+| Domain Owner | + Approve/reject domain rules        | Read policy pages      |
+| Admin        | Full tool access                     | Full SharePoint access |
 
 **Permission Enforcement:**
 
-| Layer | Mechanism |
-|-------|-----------|
-| SharePoint pages | SharePoint permissions / Azure AD groups |
-| Chat agent | Inherits SharePoint user context |
-| Mastra tools | Validate user identity + role before executing |
-| GitHub | Branch protection; approval table tracking |
-| Central service | Webhook signature verification |
+| Layer            | Mechanism                                      |
+| ---------------- | ---------------------------------------------- |
+| SharePoint pages | SharePoint permissions / Azure AD groups       |
+| Chat agent       | Inherits SharePoint user context               |
+| Mastra tools     | Validate user identity + role before executing |
+| GitHub           | Branch protection; approval table tracking     |
+| Central service  | Webhook signature verification                 |
 
 ---
 
 ## 8. Future Enhancements
 
-| Enhancement | Description |
-|-------------|-------------|
-| **Teams Approvals** | Integrate with Microsoft Teams Approvals app for managing approval state and notifications |
-| **Voice interface** | Allow voice queries to the agent in Teams/SharePoint |
-| **Proactive notifications** | Agent notifies users of pending items via Teams chat |
-| **Bulk operations** | "Approve all changes from this week's security review" |
-| **Training integration** | Link policy acknowledgements to LMS training records |
-| **Query analytics** | Track common questions to identify policy gaps or confusion |
-| **Versioned pages** | Add native SP pages for historical versions if PDF archive insufficient |
+| Enhancement                 | Description                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| **Teams Approvals**         | Integrate with Microsoft Teams Approvals app for managing approval state and notifications |
+| **Voice interface**         | Allow voice queries to the agent in Teams/SharePoint                                       |
+| **Proactive notifications** | Agent notifies users of pending items via Teams chat                                       |
+| **Bulk operations**         | "Approve all changes from this week's security review"                                     |
+| **Training integration**    | Link policy acknowledgements to LMS training records                                       |
+| **Query analytics**         | Track common questions to identify policy gaps or confusion                                |
+| **Versioned pages**         | Add native SP pages for historical versions if PDF archive insufficient                    |
 
 ---
 
 ## 9. Open Questions
 
-| Question | Notes |
-|----------|-------|
-| **Policy Bot setup** | GitHub App registration needed; webhook URL configuration |
-| **Graph API permissions** | App registration needed for SP page creation; Sites.ReadWrite.All likely required |
-| **PDF template** | Branding requirements; who provides template? |
-| **Review escalation path** | Line manager from People First? Fixed escalation chain? |
-| **Conflict detection scope** | Within policy only, or cross-policy? AI-assisted? |
-| **One change at a time** | Enforce single active PR per policy to avoid merge conflicts? |
-| **Canvas component library** | Build custom or use existing component library for diff/preview? |
-| **Embedding model selection** | Evaluating Google's new model; need to benchmark on policy content |
-| **SP page template** | Standard template for all policy pages; who designs? |
-| **Service hosting** | Azure Container Apps vs App Service vs other |
-| **Webhook reliability** | Retry strategy for failed webhook processing |
+| Question                      | Notes                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| **Policy Bot setup**          | GitHub App registration needed; webhook URL configuration                         |
+| **Graph API permissions**     | App registration needed for SP page creation; Sites.ReadWrite.All likely required |
+| **PDF template**              | Branding requirements; who provides template?                                     |
+| **Review escalation path**    | Line manager from People First? Fixed escalation chain?                           |
+| **Conflict detection scope**  | Within policy only, or cross-policy? AI-assisted?                                 |
+| **One change at a time**      | Enforce single active PR per policy to avoid merge conflicts?                     |
+| **Canvas component library**  | Build custom or use existing component library for diff/preview?                  |
+| **Embedding model selection** | Evaluating Google's new model; need to benchmark on policy content                |
+| **SP page template**          | Standard template for all policy pages; who designs?                              |
+| **Service hosting**           | Azure Container Apps vs App Service vs other                                      |
+| **Webhook reliability**       | Retry strategy for failed webhook processing                                      |
 
 ---
 
 ## 10. Change Log
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 0.1.0 | 2026-01-26 | Duncan / Claude | Initial high-level architecture |
-| 0.2.0 | 2026-01-26 | Duncan / Claude | Updated to one-file-per-policy frontmatter markdown approach; added AI retrieval strategy |
-| 0.3.0 | 2026-01-26 | Duncan / Claude | Replaced separate React Portal with SPFx web parts in SharePoint; added Azure Function proxy |
-| 0.4.0 | 2026-01-26 | Duncan / Claude | Simplified to agent-first interaction model; single chat SPFx web part; Mastra tools for all operations |
-| 0.5.0 | 2026-01-26 | Duncan / Claude | Added retrieval layer design with hybrid search, pgvector, incremental indexing, and agentic retrieval flow |
-| 0.6.0 | 2026-01-26 | Duncan / Claude | Changed to native SharePoint pages (via Graph API) instead of static HTML files; added versioning strategy with PDF archive |
-| 0.7.0 | 2026-01-26 | Duncan / Claude | Replaced GitHub Actions with webhook-driven central service; content repos now pure content with no workflow files |
+| Version | Date       | Author          | Changes                                                                                                                     |
+| ------- | ---------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-01-26 | Duncan / Claude | Initial high-level architecture                                                                                             |
+| 0.2.0   | 2026-01-26 | Duncan / Claude | Updated to one-file-per-policy frontmatter markdown approach; added AI retrieval strategy                                   |
+| 0.3.0   | 2026-01-26 | Duncan / Claude | Replaced separate React Portal with SPFx web parts in SharePoint; added Azure Function proxy                                |
+| 0.4.0   | 2026-01-26 | Duncan / Claude | Simplified to agent-first interaction model; single chat SPFx web part; Mastra tools for all operations                     |
+| 0.5.0   | 2026-01-26 | Duncan / Claude | Added retrieval layer design with hybrid search, pgvector, incremental indexing, and agentic retrieval flow                 |
+| 0.6.0   | 2026-01-26 | Duncan / Claude | Changed to native SharePoint pages (via Graph API) instead of static HTML files; added versioning strategy with PDF archive |
+| 0.7.0   | 2026-01-26 | Duncan / Claude | Replaced GitHub Actions with webhook-driven central service; content repos now pure content with no workflow files          |
 
 ---
 

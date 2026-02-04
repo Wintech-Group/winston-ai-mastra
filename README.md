@@ -62,12 +62,17 @@ See [Architecture docs](docs/docs_handler/infra/policy_system_architecture.md) f
 ### Scripts
 
 ```bash
-bun run dev              # Start Mastra dev server
-bun run build            # Build for production
-bun run start            # Run production build
-bun run typecheck        # Type-check without emit
-bun run supabase:gen-types  # Regenerate DB types after schema changes
+bun run dev                     # Start Mastra dev server
+bun run build                   # Build for production
+bun run start                   # Run production build
+bun run typecheck               # Type-check without emit
+bun run supabase:gen-types      # Regenerate DB types after schema changes
+bun run github-app:create       # Helper to create GitHub App from manifest
 ```
+
+### Local Development Setup
+
+For local testing with the Docs Bot (GitHub App), you'll need to use ngrok to expose your local server. See [LOCAL_DEV.md](LOCAL_DEV.md) for a complete step-by-step guide.
 
 ### Project Structure
 
