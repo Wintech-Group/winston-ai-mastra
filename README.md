@@ -1,177 +1,113 @@
-# E2B Code Execution Agent
+# Winston AI
 
-An advanced Mastra template that provides a coding agent capable of planning, writing, executing, and iterating on code in secure, isolated E2B sandboxes with comprehensive file management and development workflow capabilities.
+Central AI assistant for Wintech employees, powered by [Mastra](https://mastra.ai).
 
-## Overview
+> **Status:** In active development. The first capability—controlled document management for policies—is currently being built.
 
-This template demonstrates how to build an AI coding assistant that can work with real development environments. The agent can create sandboxes, manage files and directories, execute code in multiple languages, and monitor development workflows - all within secure, isolated E2B environments.
+---
 
-## Features
+## What This Repository Contains
 
-- **Secure Code Execution**: Run Python, JavaScript, and TypeScript code in isolated E2B sandboxes
-- **Complete File Management**: Create, read, write, delete files and directories with batch operations
-- **Multi-Language Support**: Execute code in Python, JavaScript, and TypeScript environments
-- **Live Development Monitoring**: Watch directory changes and monitor development workflows
-- **Command Execution**: Run shell commands, install packages, and manage dependencies
-- **Memory System**: Persistent conversation memory with semantic recall and working memory
-- **Development Workflows**: Professional development patterns with build automation
+This repo hosts two integrated systems:
 
-## Prerequisites
+| Component                       | Description                                                                                         | Status   |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- | -------- |
+| **Winston Agent**               | General-purpose Mastra AI agent with tools for policy search, suggestions, and approvals            | In build |
+| **Document Governance Service** | Hono API receiving GitHub webhooks to sync content → SharePoint, generate PDFs, update search index | In build |
 
-- Node.js 20 or higher
-- E2B API key (sign up at [e2b.dev](https://e2b.dev))
-- OpenAI API key
+### Planned Capabilities
 
-## Setup
+| Capability               | Description                                         | Status   |
+| ------------------------ | --------------------------------------------------- | -------- |
+| Policy Management        | Query, suggest, edit, and approve policies via chat | In build |
+| Engineering Document RAG | Search engineering docs                             | Planned  |
+| Project Document RAG     | Search project docs                                 | Planned  |
 
-1. **Clone and install dependencies:**
-
-   ```bash
-   git clone https://github.com/mastra-ai/template-coding-agent.git
-   cd template-coding-agent
-   pnpm install
-   ```
-
-2. **Set up environment variables:**
-
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your API keys
-   ```
-
-   ```env
-   E2B_API_KEY="your-e2b-api-key-here"
-   OPENAI_API_KEY="your-openai-api-key-here"
-   ```
-
-3. **Start the development server:**
-
-   ```bash
-   pnpm run dev
-   ```
+---
 
 ## Architecture
 
-### Core Components
+GitHub serves as the source of truth for policy content (frontmatter markdown). The central service handles automation:
 
-#### **Coding Agent** (`src/mastra/agents/coding-agent.ts`)
+```
+GitHub (content repos)
+    │
+    │ webhooks
+    ▼
+Central Service (this repo)
+    ├── Validate schema
+    ├── Sync to SharePoint (native pages)
+    ├── Generate & archive PDFs
+    └── Update Postgres search index
 
-The main agent with comprehensive development capabilities:
-
-- **Sandbox Management**: Creates and manages isolated execution environments
-- **Code Execution**: Runs code with real-time output capture
-- **File Operations**: Complete CRUD operations for files and directories
-- **Development Monitoring**: Watches for changes and monitors workflows
-- **Memory Integration**: Maintains conversation context and project history
-
-#### **E2B Tools** (`src/mastra/tools/e2b.ts`)
-
-Complete toolkit for sandbox interaction:
-
-**Sandbox Management:**
-
-- `createSandbox` - Initialize new isolated environments
-- Connection management with timeout handling
-
-**Code Execution:**
-
-- `runCode` - Execute Python, JavaScript, TypeScript code
-- Real-time output capture and error handling
-- Environment variable and timeout configuration
-
-**File Operations:**
-
-- `writeFile` - Create individual files
-- `writeFiles` - Batch create multiple files for project setup
-- `readFile` - Read file contents for analysis and validation
-- `listFiles` - Explore directory structures
-- `deleteFile` - Clean up files and directories
-- `createDirectory` - Set up project structures
-
-**File Information & Monitoring:**
-
-- `getFileInfo` - Get detailed file metadata
-- `checkFileExists` - Validate file existence for conditional logic
-- `getFileSize` - Monitor file sizes and track changes
-- `watchDirectory` - Live monitoring of file system changes
-
-**Development Workflow:**
-
-- `runCommand` - Execute shell commands, build scripts, package management
-
-### Memory System
-
-The agent includes a configured memory system:
-
-- **Thread Management**: Automatic conversation title generation
-- **Semantic Recall**: Search through previous interactions
-- **Working Memory**: Maintains context across interactions
-- **Vector Storage**: Semantic search capabilities with `LibSQLVector`
-
-## Configuration
-
-### Environment Variables
-
-```bash
-E2B_API_KEY=your_e2b_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
+Winston Agent (this repo)
+    ├── Query policies (hybrid search)
+    ├── Submit suggestions (creates GitHub Issues)
+    ├── Create/approve changes (branches, PRs)
+    └── Embedded in SharePoint via SPFx web part
 ```
 
-### Customization
+See [Architecture docs](docs/docs_handler/infra/policy_system_architecture.md) for full details.
 
-You can customize the agent behavior by modifying the instructions in `src/mastra/agents/coding-agent.ts`:
-
-```typescript
-export const codingAgent = new Agent({
-  name: 'Coding Agent',
-  instructions: `
-    // Customize agent instructions here
-    // Focus on specific languages, frameworks, or development patterns
-  `,
-  model: 'openai/gpt-4.1',
-  // ... other configuration
-});
-```
-
-## Common Issues
-
-### "E2B_API_KEY is not set"
-
-- Make sure you've set the environment variable
-- Check that your API key is valid and has sufficient credits
-- Verify your E2B account is properly configured
-
-### "Sandbox creation failed"
-
-- Check your E2B API key and account status
-- Ensure you haven't exceeded sandbox limits
-- Verify network connectivity to E2B services
-
-### "Code execution timeout"
-
-- Increase timeout values for long-running operations
-- Break down complex operations into smaller steps
-- Monitor resource usage and optimize code
-
-### "File operation errors"
-
-- Validate file paths and permissions
-- Check sandbox file system limits
-- Ensure directories exist before file operations
-
-### "Agent stopping with tool-call reason"
-
-- Increase `maxSteps` in the agent configuration
+---
 
 ## Development
 
+### Requirements
+
+- Node.js >= 22.13.0
+- [Bun](https://bun.sh) (recommended)
+- Supabase CLI (for local DB and type generation)
+
+### Scripts
+
+```bash
+bun run dev              # Start Mastra dev server
+bun run build            # Build for production
+bun run start            # Run production build
+bun run typecheck        # Type-check without emit
+bun run supabase:gen-types  # Regenerate DB types after schema changes
+```
+
 ### Project Structure
 
-```text
-src/mastra/
-      agents/
-        coding-agent.ts              # Main coding agent with development capabilities
-      tools/
-        e2b.ts                      # Complete E2B sandbox interaction toolkit
-      index.ts                        # Mastra configuration with storage and logging
 ```
+src/
+├── mastra/              # Mastra agent, tools, workflows
+│   ├── agents/
+│   ├── tools/
+│   ├── workflows/
+│   └── index.ts
+├── types/               # Generated types (database.types.ts)
+└── (planned)
+    ├── api/             # Hono routes (webhooks, health)
+    └── services/        # SharePoint sync, PDF, indexing
+
+docs/docs_handler/
+├── infra/               # Architecture, implementation plan, ADRs
+├── policy.schema.json   # JSON Schema for policy frontmatter
+└── policy-template.md   # Template for new policies
+
+supabase/                # Local Supabase config
+```
+
+---
+
+## Documentation
+
+| Document                                                                            | Purpose                              |
+| ----------------------------------------------------------------------------------- | ------------------------------------ |
+| [Architecture](docs/docs_handler/infra/policy_system_architecture.md)               | System design, components, data flow |
+| [Implementation Plan](docs/docs_handler/infra/policy_system_implementation_plan.md) | Phased delivery roadmap              |
+| [Mastra Spec](docs/docs_handler/infra/policy_system_mastra_spec.md)                 | Tool definitions and agent skills    |
+| [ADRs](docs/docs_handler/infra/policy_system_adrs.md)                               | Architectural decision records       |
+
+---
+
+## Auth & Permissions
+
+- **Azure AD** is the identity provider; staff access SharePoint and the agent via SSO
+- **Docs Bot** (GitHub App) performs all Git operations on behalf of users
+- **SharePoint groups** control who can suggest vs. approve changes
+
+Staff do not need GitHub accounts—all GitHub interactions are proxied through the Docs Bot with user attribution in commit metadata.
