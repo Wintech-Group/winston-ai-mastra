@@ -26,7 +26,8 @@ export const mastra = new Mastra({
   storage: new PostgresStore({
     id: "mastra-storage",
     // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.SUPABASE_CONNECTION_STRING,
+    schemaName: process.env.SUPABASE_SCHEMA,
   }),
   logger: new PinoLogger({
     name: "Mastra",
