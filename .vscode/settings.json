@@ -1,0 +1,6 @@
+{
+  "npm.exclude": ["**/packagesnpm/**", "**/.mastra/**"],
+  "files.exclude": {
+    "**/packagesnpm": true
+  }
+}
