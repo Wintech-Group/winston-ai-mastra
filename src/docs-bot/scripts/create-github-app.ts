@@ -52,11 +52,13 @@ console.log(JSON.stringify(manifest, null, 2))
 console.error("\n---")
 console.error(`✓ Generated manifest for ${env.toUpperCase()} environment`)
 console.error(`✓ Webhook URL: ${manifest.hook_attributes.url}`)
-console.error("\nTo create the GitHub App, run:")
+console.error("\nTo create the GitHub App:")
+console.error("  1. Copy the JSON output above")
 console.error(
-  `  bun run scripts/create-github-app.ts ${env} ${baseUrl} | gh api /organizations/Wintech-Group/app-manifests/conversions --method POST --input -`,
+  "  2. Go to: https://github.com/organizations/Wintech-Group/settings/apps/new",
 )
-console.error("\nOr copy the JSON above and paste it at:")
+console.error("  3. Paste the JSON when prompted")
+console.error("  4. Review the app name and click 'Create GitHub App'")
 console.error(
-  "  https://github.com/organizations/Wintech-Group/settings/apps/new",
+  "\nGitHub will process the manifest and redirect you back with the credentials.",
 )

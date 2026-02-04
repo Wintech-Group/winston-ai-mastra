@@ -28,16 +28,11 @@ bun run github-app:create dev https://abc123.ngrok-free.app
 
 This will output the manifest JSON. You can either:
 
-**Option A — Use GitHub CLI:**
-```bash
-bun run github-app:create dev https://abc123.ngrok-free.app | \
-  gh api /organizations/Wintech-Group/app-manifests/conversions --method POST --input -
-```
+**Copy the JSON output from the script and paste it at:**
 
-**Option B — Use Web UI:**
-1. Copy the JSON output
-2. Go to https://github.com/organizations/Wintech-Group/settings/apps/new
-3. Paste the JSON
+https://github.com/organizations/Wintech-Group/settings/apps/new
+
+GitHub will show you a registration page where you can review the app details before clicking "Create GitHub App".
 
 ## 4. Generate Private Key
 
@@ -73,6 +68,7 @@ bun run dev
 ```
 
 Your local service should now receive webhooks from GitHub when you:
+
 - Push to the test repo
 - Create/update pull requests
 - Create/comment on issues

@@ -29,47 +29,42 @@ The Docs Bot is a GitHub App (not a user account) that:
 1. **Ensure service is deployed** and you have the base URL (e.g., `https://doc-gov-service.azurecontainerapps.io`)
 
 2. **Generate the manifest with your URL**:
+
    ```bash
    bun run scripts/create-github-app.ts prod https://doc-gov-service.azurecontainerapps.io
    ```
 
 3. **Create the app**:
-   
-   Option A — Pipe to GitHub CLI (recommended):
-   ```bash
-   bun run scripts/create-github-app.ts prod https://doc-gov-service.azurecontainerapps.io | \
-     gh api /organizations/Wintech-Group/app-manifests/conversions --method POST --input -
-   ```
-   
-   Option B — Manual via Web UI:
-   - Run the script to see the generated JSON
-   - Copy the JSON output
-   - Navigate to: https://github.com/organizations/Wintech-Group/settings/apps/new
-   - Paste the manifest contents when prompted
 
-3. **Generate private key**:
+   **Copy the JSON output from the script**
+
+   Then paste it here: https://github.com/organizations/Wintech-Group/settings/apps/new
+
+   _Note: The GitHub App Manifest flow requires web UI interaction. GitHub will show a registration page where you review the app name and settings, then after you click "Create GitHub App", it processes the manifest._
+
+4. **Generate private key**:
    - On the app configuration page → "Private keys" → "Generate a private key"
    - Download `.pem` file
    - Upload to Azure Key Vault: `doc-governance-bot-private-key`
    - Delete local copy
 
-4. **Record credentials**:
+5. **Record credentials**:
    - App ID (shown on app settings page)
    - Installation ID (from installation URL after installing on a repo)
    - Private key location in Key Vault
 
-5. **Install on content repositories**:
+6. **Install on content repositories**:
    - App settings → Install App → Select repositories
    - Grant permissions when prompted
 
 ## Permissions
 
-| Resource       | Level | Purpose                         |
-| -------------- | ----- | ------------------------------- |
-| Contents       | Write | Create branches and commits     |
-| Issues         | Write | Create and manage suggestions   |
-| Pull Requests  | Write | Create and manage change PRs    |
-| Metadata       | Read  | Access repository metadata      |
+| Resource      | Level | Purpose                       |
+| ------------- | ----- | ----------------------------- |
+| Contents      | Write | Create branches and commits   |
+| Issues        | Write | Create and manage suggestions |
+| Pull Requests | Write | Create and manage change PRs  |
+| Metadata      | Read  | Access repository metadata    |
 
 ## Webhook Events
 
@@ -92,16 +87,18 @@ For local development, you **must** use a tunneling service because GitHub webho
 ### Setup
 
 1. **Start ngrok** (or similar tool):
+
    ```bash
    ngrok http 3000
    # Note the HTTPS URL, e.g., https://abc123.ngrok-free.app
    ```
 
 2. **Create a dev app** using the helper script:
+
    ```bash
    bun run scripts/create-github-app.ts dev https://abc123.ngrok-free.app
    ```
-   
+
    This will output a manifest with your ngrok URL. Either:
    - Pipe it to GitHub CLI (shown in script output), OR
    - Copy the JSON and paste at https://github.com/organizations/Wintech-Group/settings/apps/new
@@ -111,6 +108,7 @@ For local development, you **must** use a tunneling service because GitHub webho
 4. **Install dev app on test repository only** (e.g., a `docs-policy-governance-test` repo)
 
 5. **Configure your local environment**:
+
    ```bash
    # .env.local
    GITHUB_APP_ID=<dev app id>
@@ -133,11 +131,22 @@ For local development, you **must** use a tunneling service because GitHub webho
 
 To update permissions or events:
 
-1. Update `github_app_manifest.json`
-2. Either:
-   - Re-run the manifest conversion API call, OR
-   - Manually update in GitHub App settings UI
-3. Existing installations will prompt for new permissions
+1. Update `github_app_manifest.json` or `github_app_manifest.dev.json`
+2. Manually update settings in the GitHub App settings UI: https://github.com/organizations/Wintech-Group/settings/apps/<your-app>
+3. Users with existing installations will be prompted to accept new permissions
+
+_Note: There's no API to update an existing app from a manifest. The manifest flow is for initial registration only._
+
+## Programmatic Registration (Advanced)
+
+The GitHub App Manifest flow is designed for web-based registration. To fully automate it programmatically:
+
+1. Create a web server with a form that POSTs the manifest to GitHub
+2. GitHub redirects back to your `redirect_url` with a temporary `code`
+3. Exchange the `code` using: `POST /app-manifests/{code}/conversions`
+4. The API returns `id`, `pem`, and `webhook_secret`
+
+This is useful for automated provisioning but requires hosting a web endpoint. For most use cases, the web UI approach is simpler.
 
 ## References
 
