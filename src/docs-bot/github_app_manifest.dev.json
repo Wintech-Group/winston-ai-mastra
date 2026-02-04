@@ -16,11 +16,6 @@
     "pull_requests": "write",
     "metadata": "read"
   },
-  "default_events": [
-    "push",
-    "pull_request",
-    "issues",
-    "issue_comment"
-  ],
+  "default_events": ["push", "pull_request", "issues", "issue_comment"],
   "description": "[DEV] GitHub App for testing document governance workflows locally. DO NOT install on production content repositories."
 }
