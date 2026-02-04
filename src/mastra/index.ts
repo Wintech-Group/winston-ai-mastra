@@ -14,6 +14,7 @@ import {
   translationScorer,
 } from "./scorers/weather-scorer"
 import { PostgresStore } from "@mastra/pg"
+import { githubWebhookRoute } from "./webhooks/github"
 
 export const mastra = new Mastra({
   agents: { weatherAgent },
@@ -47,4 +48,7 @@ export const mastra = new Mastra({
       },
     },
   }),
+  server: {
+    apiRoutes: [githubWebhookRoute],
+  },
 })

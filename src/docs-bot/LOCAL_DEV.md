@@ -14,8 +14,10 @@ winget install ngrok.ngrok
 ## 2. Start ngrok
 
 ```bash
-ngrok http 3000
+ngrok http 4111
 ```
+
+**Note:** Mastra dev server runs on port **4111** by default, not 3000.
 
 Copy the HTTPS URL (e.g., `https://abc123.ngrok-free.app`)
 

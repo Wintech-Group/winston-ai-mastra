@@ -5,9 +5,9 @@
     "url": "https://YOUR_NGROK_URL.ngrok-free.app/webhooks/github",
     "active": true
   },
-  "redirect_url": "http://localhost:3000/setup/callback",
+  "redirect_url": "http://localhost:4111/setup/callback",
   "callback_urls": [],
-  "setup_url": "http://localhost:3000/setup",
+  "setup_url": "http://localhost:4111/setup",
   "setup_on_update": true,
   "public": false,
   "default_permissions": {

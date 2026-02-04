@@ -310,16 +310,16 @@ _Managed by Docs Bot. Do not edit manually._
 
 ### Tasks
 
-- [ ] Create `docs-policy-governance` repository (content only, no workflows)
+- [x] Create `docs-policy-governance` repository (content only, no workflows)
 - [ ] Create folder structure (`policies/`, `schema/`, `metadata/`, `templates/`)
 - [ ] Define JSON Schema for policy frontmatter
 - [ ] Create `domains.yaml` with initial domains and owners
 - [ ] Convert one existing policy (e.g., IT Security) to frontmatter markdown
-- [ ] Create `policy-template.md` for new policies
-- [ ] Review and update `github_app_manifest.json` (webhook URL placeholder is OK for now)
-- [ ] Create Docs Bot from manifest using GitHub App Manifest flow
+- [x] Create `policy-template.md` for new policies
+- [x] Review and update `github_app_manifest.json` (webhook URL placeholder is OK for now)
+- [x] Create Docs Bot from manifest using GitHub App Manifest flow
 - [ ] Generate and securely store bot private key (Azure Key Vault)
-- [ ] Install Docs Bot on `docs-policy-governance` repository
+- [x] Install Docs Bot on `docs-policy-governance` repository
 - [ ] Record App ID and Installation ID for service configuration
 
 ### Validation
@@ -351,7 +351,7 @@ _Managed by Docs Bot. Do not edit manually._
 
 ### Tasks
 
-- [ ] Create `doc-governance-service` repository
+- [ ] Integrate `doc-governance-service` in mastra repository
 - [ ] Set up Node.js/TypeScript project structure
 - [ ] Implement webhook signature verification
 - [ ] Implement document type configuration loader
