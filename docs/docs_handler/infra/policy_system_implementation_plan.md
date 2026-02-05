@@ -2,9 +2,9 @@
 
 | Attribute         | Value                                                               |
 | ----------------- | ------------------------------------------------------------------- |
-| Document Version  | 0.3.0                                                               |
+| Document Version  | 0.4.0                                                               |
 | Created           | 2026-01-26                                                          |
-| Last Updated      | 2026-01-26                                                          |
+| Last Updated      | 2026-02-05                                                          |
 | Related Documents | Policy System Architecture v0.7.0, ADRs v0.3.0                      |
 | Purpose           | Define phased implementation approach with incremental deliverables |
 
@@ -110,8 +110,8 @@ Staff do not need GitHub accounts. All GitHub operations (creating branches, com
 │ (jane.smith@)   │     │                 │     │                 │
 │                 │     │ 1. Get bot      │     │                 │
 │ "Create a PR    │     │    credentials  │     │                 │
-│  to update      │     │    from Key     │     │                 │
-│  rule X"        │     │    Vault        │     │                 │
+│  to update      │     │    from env     │     │                 │
+│  rule X"        │     │    variables    │     │                 │
 │                 │     │                 │     │                 │
 │                 │     │ 2. Call GitHub  │     │ Authenticated   │
 │                 │     │    API as bot   │     │ as:             │
@@ -211,9 +211,27 @@ gh api /organizations/Wintech-Group/app-manifests/conversions \
 - On the app configuration page, scroll to "Private keys"
 - Click "Generate a private key"
 - Download the `.pem` file
-- Upload to Azure Key Vault: `doc-governance-bot-private-key`
-- Store App ID in environment variables or Key Vault
-- Delete local copy of `.pem` file
+- Base64 encode the private key for storage:
+
+  ```bash
+  # On Linux/macOS:
+  base64 -i downloaded-key.pem | tr -d '\n' > encoded-key.txt
+
+  # On Windows (PowerShell):
+  [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("downloaded-key.pem")) | Out-File -Encoding ASCII encoded-key.txt
+  ```
+
+- Store the base64-encoded key as environment variable: `GITHUB_APP_PRIVATE_KEY`
+- Store App ID as environment variable: `GITHUB_APP_ID`
+- Store Installation ID as environment variable: `GITHUB_APP_INSTALLATION_ID`
+- **Delete local copies** of both `.pem` file and `encoded-key.txt` after setting environment variables
+
+**Security notes:**
+
+- The private key must be base64 encoded to safely store in a single-line environment variable
+- Never commit the private key or encoded key to version control
+- Ensure your hosting provider's environment variables are encrypted at rest
+- Rotate the key periodically (generate new key in GitHub App settings)
 
 **4. Install on content repositories:**
 
@@ -221,13 +239,24 @@ gh api /organizations/Wintech-Group/app-manifests/conversions \
 - Select repositories (e.g., `docs-policy-governance`)
 - Grant permissions when prompted
 
-**5. Note credentials for service configuration:**
+**5. Configure environment variables:**
 
-Record the following for use in the central service:
+Set the following environment variables in your hosting provider:
 
-- App ID (numeric ID from app settings)
-- Installation ID (from installation URL)
-- Private key location in Key Vault
+- `GITHUB_APP_ID` - Numeric ID from app settings (e.g., `123456`)
+- `GITHUB_APP_INSTALLATION_ID` - From installation URL (e.g., `12345678`)
+- `GITHUB_APP_PRIVATE_KEY` - Base64-encoded private key from step 3
+- `GITHUB_WEBHOOK_SECRET` - Secret for webhook signature verification
+
+**To decode the private key in your application:**
+
+```typescript
+// In your GitHub API client
+const privateKey = Buffer.from(
+  process.env.GITHUB_APP_PRIVATE_KEY!,
+  "base64",
+).toString("utf-8")
+```
 
 **Notes:**
 
@@ -235,6 +264,8 @@ Record the following for use in the central service:
 - The manifest can be version controlled; update it before re-registering the app
 - Webhook URLs should point to the deployed central service, not localhost
 - For local development, use a tool like ngrok to expose your local service, then create a separate development app
+- **Detailed setup instructions:** See [github_env_setup.md](./github_env_setup.md) for complete step-by-step guide
+- **Example implementation:** See [github_auth_example.ts](./github_auth_example.ts) for code examples
 
 ---
 
@@ -300,14 +331,14 @@ _Managed by Docs Bot. Do not edit manually._
 
 ### Deliverables
 
-| Item                          | Description                                      |
-| ----------------------------- | ------------------------------------------------ |
-| `docs-policy-governance` repo | Empty content repo with folder structure         |
-| `policy.schema.json`          | JSON Schema for frontmatter validation           |
-| Database config schema        | `config.domains` tables with seed data           |
-| `metadata/governance.yaml`    | Repository workflow configuration                |
-| First policy converted        | One existing PDF policy in new format            |
-| Docs Bot registered           | GitHub App with webhook configuration            |
+| Item                          | Description                              |
+| ----------------------------- | ---------------------------------------- |
+| `docs-policy-governance` repo | Empty content repo with folder structure |
+| `policy.schema.json`          | JSON Schema for frontmatter validation   |
+| Database config schema        | `config.domains` tables with seed data   |
+| `metadata/governance.yaml`    | Repository workflow configuration        |
+| First policy converted        | One existing PDF policy in new format    |
+| Docs Bot registered           | GitHub App with webhook configuration    |
 
 ### Tasks
 
@@ -342,20 +373,20 @@ _Managed by Docs Bot. Do not edit manually._
 
 ### Deliverables
 
-| Item                       | Description                                   |
-| -------------------------- | --------------------------------------------- |
-| Central service            | Deployed to Azure Container Apps              |
-| Webhook endpoint           | `/webhooks/github` receiving events           |
-| Push handler               | Validates, syncs to SharePoint, generates PDF |
-| SharePoint site            | Site with pages for policies                  |
-| Graph API app registration | Azure AD app for SharePoint access            |
+| Item                       | Description                                     |
+| -------------------------- | ----------------------------------------------- |
+| Central service            | Deployed to Azure Container Apps                |
+| Webhook endpoint           | `/webhooks/github` receiving events             |
+| Push handler               | Validates, syncs to SharePoint, generates PDF   |
+| SharePoint site            | Site with pages for policies                    |
+| Graph API app registration | Azure AD app for SharePoint access              |
 | Database config synced     | Repository config synced from `governance.yaml` |
 
 ### Tasks
 
 - [x] Integrate `doc-governance-service` in mastra repository — **Implemented:** Webhook handler at `src/mastra/webhooks/github/`
 - [x] Set up Node.js/TypeScript project structure — **Using:** Bun + TypeScript
-- [ ] Implement webhook signature verification
+- [x] Implement webhook signature verification
 - [ ] Implement database query for repository configuration
 - [ ] Create SharePoint site (`policies.company.com`)
 - [ ] Create Azure AD app registration for Graph API
@@ -693,16 +724,16 @@ Phases are sequential — each builds on the previous. Limited parallelisation p
 
 Once the platform is proven with policies, adding a new document type (e.g., SOPs) requires:
 
-| Step                             | Effort  |
-| -------------------------------- | ------- |
-| Create content repository        | Minutes |
-| Install Docs Bot on repo         | Minutes |
-| Add document type configuration  | Hours   |
-| Create schema for new type       | Hours   |
-| Seed domain data if needed       | Minutes |
-| Create agent skill for new type  | Days    |
-| Create SharePoint site           | Hours   |
-| Bulk convert existing documents  | Days    |
+| Step                            | Effort  |
+| ------------------------------- | ------- |
+| Create content repository       | Minutes |
+| Install Docs Bot on repo        | Minutes |
+| Add document type configuration | Hours   |
+| Create schema for new type      | Hours   |
+| Seed domain data if needed      | Minutes |
+| Create agent skill for new type | Days    |
+| Create SharePoint site          | Hours   |
+| Bulk convert existing documents | Days    |
 
 No changes to central service code required — just configuration.
 
@@ -715,3 +746,4 @@ No changes to central service code required — just configuration.
 | 0.1.0   | 2026-01-26 | Duncan / Claude | Initial implementation plan                                                                                                                     |
 | 0.2.0   | 2026-01-26 | Duncan / Claude | Clarified Policy Bot terminology; added detailed explanation of service account approach                                                        |
 | 0.3.0   | 2026-01-26 | Duncan / Claude | Renamed to Docs Bot; replaced GitHub Actions with webhook-driven central service; updated for platform model supporting multiple document types |
+| 0.4.0   | 2026-02-05 | Duncan / Claude | Updated authentication to use environment variables instead of Azure Key Vault; added comprehensive setup guide and code examples               |
