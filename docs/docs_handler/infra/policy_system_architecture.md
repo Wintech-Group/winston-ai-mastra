@@ -4,10 +4,10 @@
 
 | Attribute         | Value                                                                     |
 | ----------------- | ------------------------------------------------------------------------- |
-| Document Version  | 0.7.0                                                                     |
+| Document Version  | 0.9.0                                                                     |
 | Status            | Draft                                                                     |
 | Created           | 2026-01-26                                                                |
-| Last Updated      | 2026-01-26                                                                |
+| Last Updated      | 2026-02-05                                                                |
 | Related Documents | Policy Definition Specification v0.1.0, Policy System Requirements v0.1.0 |
 | Purpose           | Define the high-level architecture for the policy management system       |
 
@@ -41,15 +41,17 @@
 
 **Separation of Concerns** — Each component has a single responsibility:
 
-| Concern                   | System                              |
-| ------------------------- | ----------------------------------- |
-| Storage & Version Control | GitHub                              |
-| Human Viewing             | SharePoint (Native Pages + PDF)     |
-| Human Interaction         | Chat Agent (SPFx) + Mastra Tools    |
-| Policy Retrieval          | Postgres (pgvector) + Hybrid Search |
-| Workflow Automation       | Central Service (webhook-driven)    |
-| Identity & Permissions    | Azure AD                            |
-| Organisational Data       | People First                        |
+| Concern                   | System                                                 |
+| ------------------------- | ------------------------------------------------------ |
+| Storage & Version Control | GitHub                                                 |
+| Human Viewing             | SharePoint (Native Pages + PDF)                        |
+| Human Interaction         | Chat Agent (SPFx) + Mastra Tools                       |
+| Policy Retrieval          | Postgres (pgvector) + Hybrid Search                    |
+| Workflow Automation       | Central Service (webhook-driven)                       |
+| Identity & Permissions    | Azure AD                                               |
+| Organisational Data       | People First                                           |
+| Domain Ownership          | Postgres (`config.domains`)                            |
+| Repository Configuration  | Postgres (`config.repository_config`) synced from repo |
 
 ### 1.2 Architecture Overview
 
@@ -253,12 +255,14 @@ docs-policy-governance/
 ├── schema/
 │   └── policy.schema.json            # JSON Schema for frontmatter validation
 ├── metadata/
-│   └── domains.yaml                  # Domain definitions and owners
+│   └── governance.yaml               # Repository workflow configuration (syncs to DB on push)
 ├── templates/
 │   ├── policy-template.md            # Blank template for new policies
 │   └── pdf-template.html             # Branding template for PDF generation
 └── README.md
 ```
+
+**Note:** Domain ownership is stored in the Postgres database (`config.domains`) as organisational truth. Repository workflow configuration is defined declaratively in `metadata/governance.yaml` and synced to the database on push.
 
 **Note:** There is no `.github/workflows/` directory. The Policy Bot (GitHub App) is installed on this repository and delivers webhooks to the central service, which handles all automation.
 
@@ -286,11 +290,26 @@ Domain-based approval routing is handled by the central service when it receives
 
 1. PR is opened or updated
 2. GitHub sends `pull_request` webhook to central service
-3. Service parses the diff to identify which rules changed
-4. Looks up domain owners from `metadata/domains.yaml`
-5. Updates PR body with approval table listing required approvers
-6. Sends notifications to domain owners
-7. PR cannot merge until all approvals recorded in approval table
+3. Service queries database for repository configuration (fast lookup, no file fetching)
+4. Service parses the diff to identify which rules changed
+5. Queries database for domain owners (`config.domains` + `config.domain_owners`)
+6. Updates PR body with approval table listing required approvers
+7. Sends notifications to domain owners per repository configuration
+8. PR cannot merge until all approvals recorded in approval table
+
+**Configuration Architecture:**
+
+| Configuration       | Storage                                             | Source                                             | Update Method           |
+| ------------------- | --------------------------------------------------- | -------------------------------------------------- | ----------------------- |
+| Domain ownership    | Postgres (`config.domains`, `config.domain_owners`) | Managed via Central Service API/Admin UI           | Direct database updates |
+| Repository workflow | Postgres (`config.repository_config`)               | Declared in each repo's `metadata/governance.yaml` | Synced on push webhook  |
+
+**Benefits:**
+
+- Fast PR handling (database lookup, no GitHub API calls)
+- Single source of truth for domain ownership (database)
+- Content repos remain declarative and self-contained
+- Repository configuration auto-syncs on merge
 
 ---
 
@@ -833,7 +852,123 @@ This can be implemented as:
 
 All automation is handled by a central service that receives GitHub webhooks. Content repositories contain no workflow files — adding a new document type requires only installing the GitHub App and adding a configuration entry.
 
-#### 4.6.1 Webhook Events
+#### 4.6.1 Configuration Database Schema
+
+Domain ownership and repository workflow configuration are stored in Postgres for fast access and single source of truth.
+
+**Schema: `config`**
+
+```sql
+-- Organisational domain ownership (managed centrally)
+CREATE TABLE config.domains (
+    id              TEXT PRIMARY KEY,           -- 'IT', 'HR', 'Finance'
+    name            TEXT NOT NULL,              -- 'Information Technology'
+    description     TEXT,                       -- Domain description
+    contact_email   TEXT,                       -- General domain contact
+    teams_channel   TEXT,                       -- Teams channel name
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE config.domain_owners (
+    domain_id       TEXT REFERENCES config.domains(id) ON DELETE CASCADE,
+    email           TEXT NOT NULL,              -- Azure AD email
+    name            TEXT,                       -- Display name
+    role            TEXT,                       -- Role/title
+    added_at        TIMESTAMPTZ DEFAULT NOW(),
+    added_by        TEXT,                       -- Who added this owner
+    PRIMARY KEY (domain_id, email)
+);
+
+CREATE TABLE config.domain_scope (
+    domain_id       TEXT REFERENCES config.domains(id) ON DELETE CASCADE,
+    scope_item      TEXT NOT NULL,              -- Area of responsibility
+    sort_order      INTEGER,
+    PRIMARY KEY (domain_id, scope_item)
+);
+
+-- Per-repository workflow configuration (synced from repo on push)
+CREATE TABLE config.repository_config (
+    repo_full_name          TEXT PRIMARY KEY,   -- 'Wintech-Group/docs-policy-governance'
+    document_type           TEXT NOT NULL,      -- 'policies', 'sops', 'tech-docs'
+
+    -- Approval settings
+    approval_required       BOOLEAN DEFAULT TRUE,
+    domain_approval         BOOLEAN DEFAULT TRUE,
+    owner_approval          BOOLEAN DEFAULT TRUE,
+    auto_merge_enabled      BOOLEAN DEFAULT FALSE,
+    auto_merge_after_hours  INTEGER,
+
+    -- Notification settings
+    notify_on_pr_open       BOOLEAN DEFAULT TRUE,
+    reminder_after_hours    INTEGER DEFAULT 48,
+    escalate_after_hours    INTEGER DEFAULT 120,
+    notification_channels   TEXT[] DEFAULT ARRAY['email'],  -- ['email', 'teams']
+
+    -- Sync metadata
+    config_file_path        TEXT DEFAULT 'metadata/governance.yaml',
+    config_sha              TEXT,               -- SHA of last synced config file
+    synced_at               TIMESTAMPTZ,
+
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Cross-domain rules for specific patterns
+CREATE TABLE config.cross_domain_rules (
+    id                  SERIAL PRIMARY KEY,
+    repo_full_name      TEXT REFERENCES config.repository_config(repo_full_name) ON DELETE CASCADE,
+    rule_pattern        TEXT NOT NULL,          -- Regex pattern for rule matching
+    required_domains    TEXT[] NOT NULL,        -- Array of domain IDs required
+    description         TEXT,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for fast lookups
+CREATE INDEX idx_domain_owners_email ON config.domain_owners(email);
+CREATE INDEX idx_cross_domain_rules_repo ON config.cross_domain_rules(repo_full_name);
+```
+
+**Repository Configuration File:**
+
+Each content repository declares its workflow configuration in `metadata/governance.yaml`:
+
+```yaml
+# metadata/governance.yaml (synced to database on push)
+document_type: policies
+
+approval:
+  required: true
+  domain_approval: true
+  owner_approval: true
+  auto_merge:
+    enabled: false
+    after_hours: 24
+
+notifications:
+  on_pr_open: true
+  channels:
+    - email
+    - teams
+  reminder_after_hours: 48
+  escalate_after_hours: 120
+
+# Cross-domain rules specific to this document type
+cross_domain_rules:
+  - pattern: "travel.*high-risk|restricted.*territory"
+    domains: [IT, HR]
+    description: Travel to high-risk jurisdictions
+
+  - pattern: "remote.*work|work.*from.*home"
+    domains: [HR, IT]
+    description: Remote working arrangements
+```
+
+**Domain Management:**
+
+Domains are managed via the central service API (or future admin UI), not via repository files. This keeps domain ownership as an organisational concern, separate from document workflow configuration.
+
+#### 4.6.2 Webhook Events
 
 | Event                        | Trigger       | Actions                                               |
 | ---------------------------- | ------------- | ----------------------------------------------------- |
@@ -886,7 +1021,7 @@ All automation is handled by a central service that receives GitHub webhooks. Co
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 4.6.3 Push Handler (On Merge)
+#### 4.6.5 Push Handler (On Merge)
 
 When a PR is merged to `main`:
 
@@ -899,37 +1034,139 @@ When a PR is merged to `main`:
                         ┌────────────────────────────────┼─────────────────────────┐
                         ▼                                ▼                         ▼
                ┌──────────────┐                 ┌──────────────┐          ┌──────────────┐
-               │ Sync         │                 │ Generate     │          │ Update       │
-               │ SharePoint   │                 │ PDF          │          │ Search Index │
-               │              │                 │              │          │              │
-               │ Graph API    │                 │ Archive prev │          │ Re-embed     │
-               │ create/update│                 │ Upload new   │          │ changed only │
-               │ native page  │                 │              │          │              │
-               └──────────────┘                 └──────────────┘          └──────────────┘
+               │ Check if     │                 │ Sync         │          │ Generate     │
+               │ governance   │                 │ SharePoint   │          │ PDF          │
+               │ .yaml changed│                 │              │          │              │
+               └──────┬───────┘                 │ Graph API    │          │ Archive prev │
+                      │                         │ create/update│          │ Upload new   │
+                      ▼                         │ native page  │          │              │
+               ┌──────────────┐                 └──────────────┘          └──────────────┘
+               │ Sync config  │                         │                         │
+               │ to database  │                         ▼                         ▼
+               │ (upsert)     │                 ┌──────────────┐          ┌──────────────┐
+               └──────────────┘                 │ Update       │          │ Update       │
+                                                │ Search Index │          │ metadata     │
+                                                │              │          │ columns      │
+                                                │ Re-embed     │          │              │
+                                                │ changed only │          │              │
+                                                └──────────────┘          └──────────────┘
 ```
 
-#### 4.6.4 PR Handler (On Open/Update)
+**Config Sync Logic:**
+
+```typescript
+async function handlePush(webhook: PushWebhook) {
+  const repoFullName = webhook.repository.full_name
+
+  // Check if governance.yaml changed
+  const configChanged = webhook.commits.some(
+    (c) =>
+      c.modified.includes("metadata/governance.yaml") ||
+      c.added.includes("metadata/governance.yaml"),
+  )
+
+  if (configChanged) {
+    // Fetch and sync config to database
+    const config = await fetchFile(
+      repoFullName,
+      "metadata/governance.yaml",
+      "main",
+    )
+    await syncRepoConfig(repoFullName, config, webhook.head_commit.id)
+    console.log(`Synced config for ${repoFullName}`)
+  }
+
+  // Continue with normal push handling (sync SP, PDF, index)
+  await syncSharePoint(webhook)
+  await generatePDFs(webhook)
+  await updateSearchIndex(webhook)
+}
+
+async function syncRepoConfig(
+  repoFullName: string,
+  configYaml: string,
+  sha: string,
+) {
+  const config = parseYaml(configYaml)
+
+  // Upsert repository config
+  await db.repositoryConfig.upsert({
+    where: { repo_full_name: repoFullName },
+    update: {
+      document_type: config.document_type,
+      approval_required: config.approval.required,
+      domain_approval: config.approval.domain_approval,
+      owner_approval: config.approval.owner_approval,
+      auto_merge_enabled: config.approval.auto_merge?.enabled ?? false,
+      auto_merge_after_hours: config.approval.auto_merge?.after_hours,
+      notify_on_pr_open: config.notifications.on_pr_open,
+      reminder_after_hours: config.notifications.reminder_after_hours,
+      escalate_after_hours: config.notifications.escalate_after_hours,
+      notification_channels: config.notifications.channels,
+      config_sha: sha,
+      synced_at: new Date(),
+      updated_at: new Date(),
+    },
+    create: {
+      /* same fields */
+    },
+  })
+
+  // Sync cross-domain rules
+  await db.crossDomainRules.deleteMany({
+    where: { repo_full_name: repoFullName },
+  })
+
+  if (config.cross_domain_rules) {
+    await db.crossDomainRules.createMany({
+      data: config.cross_domain_rules.map((rule) => ({
+        repo_full_name: repoFullName,
+        rule_pattern: rule.pattern,
+        required_domains: rule.domains,
+        description: rule.description,
+      })),
+    })
+  }
+}
+```
+
+#### 4.6.6 PR Handler (On Open/Update)
 
 When a PR is opened or updated:
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ pull_request    │────►│ Central Service │────►│ Validate        │
-│ webhook         │     │ PR Handler      │     │ schema          │
-└─────────────────┘     └─────────────────┘     └────────┬────────┘
+│ pull_request    │────►│ Central Service │────►│ Get repo config │
+│ webhook         │     │ PR Handler      │     │ from database   │
+└─────────────────┘     └─────────────────┘     │ (fast lookup)   │
+                                                └────────┬────────┘
                                                          │
                                           ┌──────────────┴──────────────┐
                                           ▼                             ▼
                                    ┌─────────────┐               ┌─────────────┐
-                                   │ Valid       │               │ Invalid     │
+                                   │ Approval    │               │ No approval │
+                                   │ required    │               │ needed      │
                                    └──────┬──────┘               └──────┬──────┘
                                           │                             │
                                           ▼                             ▼
                                    ┌─────────────┐               ┌─────────────┐
-                                   │ Parse diff  │               │ Add comment │
-                                   │ Identify    │               │ with errors │
-                                   │ domains     │               │             │
+                                   │ Validate    │               │ Auto-approve│
+                                   │ schema      │               │ or skip     │
                                    └──────┬──────┘               └─────────────┘
+                                          │
+                                          ▼
+                                   ┌─────────────┐
+                                   │ Parse diff  │
+                                   │ Identify    │
+                                   │ domains     │
+                                   └──────┬──────┘
+                                          │
+                                          ▼
+                                   ┌─────────────┐
+                                   │ Query DB for│
+                                   │ domain      │
+                                   │ owners      │
+                                   └──────┬──────┘
                                           │
                                           ▼
                                    ┌─────────────┐
@@ -947,7 +1184,84 @@ When a PR is opened or updated:
                                    └─────────────┘
 ```
 
-#### 4.6.5 SharePoint Sync Process
+**PR Handler Logic:**
+
+```typescript
+async function handlePR(webhook: PRWebhook) {
+  const repoFullName = webhook.repository.full_name
+  const prNumber = webhook.pull_request.number
+
+  // Get config from database (fast lookup, no GitHub API call)
+  const config = await db.repositoryConfig.findUnique({
+    where: { repo_full_name: repoFullName },
+  })
+
+  if (!config) {
+    console.warn(
+      `No config found for ${repoFullName}, skipping approval routing`,
+    )
+    return
+  }
+
+  if (!config.approval_required) {
+    console.log(`Approval not required for ${repoFullName}`)
+    return
+  }
+
+  // Validate schema
+  const validationErrors = await validatePolicySchema(webhook)
+  if (validationErrors.length > 0) {
+    await addPRComment(
+      repoFullName,
+      prNumber,
+      formatValidationErrors(validationErrors),
+    )
+    return
+  }
+
+  // Parse diff to identify affected domains
+  const affectedDomains = await parseAffectedDomains(webhook)
+
+  if (affectedDomains.length === 0) {
+    console.log(`No domain changes detected in PR #${prNumber}`)
+    return
+  }
+
+  // Query database for domain owners (fast, no file fetching)
+  const owners = await db.domainOwners.findMany({
+    where: { domain_id: { in: affectedDomains } },
+    include: { domain: true },
+  })
+
+  // Check cross-domain rules
+  const crossDomainRules = await db.crossDomainRules.findMany({
+    where: { repo_full_name: repoFullName },
+  })
+
+  const additionalDomains = await checkCrossDomainRules(
+    webhook,
+    crossDomainRules,
+  )
+
+  const allDomains = [...new Set([...affectedDomains, ...additionalDomains])]
+
+  // Get all required owners
+  const allOwners = await db.domainOwners.findMany({
+    where: { domain_id: { in: allDomains } },
+    include: { domain: true },
+  })
+
+  // Update PR with approval table
+  await updatePRApprovalTable(repoFullName, prNumber, allOwners, config)
+
+  // Send notifications
+  if (config.notify_on_pr_open) {
+    await sendApprovalNotifications(allOwners, webhook, config)
+  }
+}
+```
+
+#### 4.6.7 SharePoint Sync Process
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
@@ -991,15 +1305,19 @@ When a PR is opened or updated:
 | Set metadata      | Page properties in create/update         | Populate SharePoint columns |
 | Add web part      | `POST .../pages/{page-id}/webParts`      | Add chat agent to new pages |
 
-#### 4.6.6 Benefits of Webhook-Driven Approach
+#### 4.6.8 Benefits of Database-First Configuration
 
-| Benefit             | Explanation                                         |
-| ------------------- | --------------------------------------------------- |
-| Zero duplication    | All automation logic in one place                   |
-| Simple onboarding   | New document type = install GitHub App + add config |
-| Atomic updates      | Change logic once, applies to all repos             |
-| Platform model      | Content repos are pure content                      |
-| Centralised logging | All events processed through single service         |
+| Benefit                | Explanation                                                   |
+| ---------------------- | ------------------------------------------------------------- |
+| Fast PR handling       | Database lookup vs GitHub API calls for config                |
+| Single source of truth | Domain ownership centralized in database                      |
+| Declarative config     | Content repos declare workflow settings in governance.yaml    |
+| Auto-sync on merge     | Config automatically syncs when governance.yaml changes       |
+| No duplication         | All automation logic in one place                             |
+| Simple onboarding      | New document type = install GitHub App + add governance.yaml  |
+| Atomic updates         | Change config in database, applies to all lookups immediately |
+| Platform model         | Content repos are pure content                                |
+| Centralised logging    | All events processed through single service                   |
 
 ---
 
@@ -1285,23 +1603,26 @@ When a PR is opened or updated:
 
 ## 10. Change Log
 
-| Version | Date       | Author          | Changes                                                                                                                     |
-| ------- | ---------- | --------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-01-26 | Duncan / Claude | Initial high-level architecture                                                                                             |
-| 0.2.0   | 2026-01-26 | Duncan / Claude | Updated to one-file-per-policy frontmatter markdown approach; added AI retrieval strategy                                   |
-| 0.3.0   | 2026-01-26 | Duncan / Claude | Replaced separate React Portal with SPFx web parts in SharePoint; added Azure Function proxy                                |
-| 0.4.0   | 2026-01-26 | Duncan / Claude | Simplified to agent-first interaction model; single chat SPFx web part; Mastra tools for all operations                     |
-| 0.5.0   | 2026-01-26 | Duncan / Claude | Added retrieval layer design with hybrid search, pgvector, incremental indexing, and agentic retrieval flow                 |
-| 0.6.0   | 2026-01-26 | Duncan / Claude | Changed to native SharePoint pages (via Graph API) instead of static HTML files; added versioning strategy with PDF archive |
-| 0.7.0   | 2026-01-26 | Duncan / Claude | Replaced GitHub Actions with webhook-driven central service; content repos now pure content with no workflow files          |
+| Version | Date       | Author          | Changes                                                                                                                                                                                                                    |
+| ------- | ---------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-01-26 | Duncan / Claude | Initial high-level architecture                                                                                                                                                                                            |
+| 0.2.0   | 2026-01-26 | Duncan / Claude | Updated to one-file-per-policy frontmatter markdown approach; added AI retrieval strategy                                                                                                                                  |
+| 0.3.0   | 2026-01-26 | Duncan / Claude | Replaced separate React Portal with SPFx web parts in SharePoint; added Azure Function proxy                                                                                                                               |
+| 0.4.0   | 2026-01-26 | Duncan / Claude | Simplified to agent-first interaction model; single chat SPFx web part; Mastra tools for all operations                                                                                                                    |
+| 0.5.0   | 2026-01-26 | Duncan / Claude | Added retrieval layer design with hybrid search, pgvector, incremental indexing, and agentic retrieval flow                                                                                                                |
+| 0.6.0   | 2026-01-26 | Duncan / Claude | Changed to native SharePoint pages (via Graph API) instead of static HTML files; added versioning strategy with PDF archive                                                                                                |
+| 0.7.0   | 2026-01-26 | Duncan / Claude | Replaced GitHub Actions with webhook-driven central service; content repos now pure content with no workflow files                                                                                                         |
+| 0.8.0   | 2026-02-05 | Duncan / Claude | Split domain configuration: organisational ownership in Central Service (`config/domains.yaml`), approval rules in Content Repo (`metadata/approval-config.yaml`)                                                          |
+| 0.9.0   | 2026-02-05 | Duncan / Claude | Moved all configuration to Postgres database: domain ownership in `config.domains`, repository workflow in `config.repository_config` (synced from repo's `governance.yaml`); eliminated config files from central service |
 
 ---
 
 ## 11. Next Steps
 
-- [ ] Review and confirm architecture with stakeholders
-- [ ] Define frontmatter schema in detail (JSON Schema)
-- [ ] Design `domains.yaml` structure for domain ownership mapping
+- [x] Review and confirm architecture with stakeholders
+- [x] Define frontmatter schema in detail (JSON Schema)
+- [x] Design database schema for domain ownership (`config.domains`, `config.domain_owners`)
+- [x] Create Supabase migration for config schema
 - [ ] Design Postgres schema for retrieval layer
 - [ ] Evaluate and select embedding model
 - [ ] Define Mastra tool specifications (inputs, outputs, permissions)

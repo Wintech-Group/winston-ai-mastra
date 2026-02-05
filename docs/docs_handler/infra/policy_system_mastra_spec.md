@@ -1,13 +1,13 @@
 # Policy System — Mastra Agent & Tools Specification
 
-| Attribute | Value |
-|-----------|-------|
-| Document Version | 0.1.0 |
-| Created | 2026-01-26 |
-| Last Updated | 2026-01-26 |
-| Repository | `policy-system-infra` |
-| Related Documents | Policy System Architecture v0.6.0, Implementation Plan v0.2.0 |
-| Purpose | Define the Mastra agent, tools, and skills for the policy governance system |
+| Attribute         | Value                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| Document Version  | 0.3.0                                                                       |
+| Created           | 2026-01-26                                                                  |
+| Last Updated      | 2026-02-05                                                                  |
+| Repository        | `policy-system-infra`                                                       |
+| Related Documents | Policy System Architecture v0.9.0, Implementation Plan v0.2.0               |
+| Purpose           | Define the Mastra agent, tools, and skills for the policy governance system |
 
 ---
 
@@ -110,21 +110,18 @@ policy-system-infra/
 ```typescript
 // mastra/agents/governance-assistant.ts
 
-import { Agent } from '@mastra/core';
-import { policyTools } from '../tools/policy';
-import { githubTools } from '../tools/github';
-import { microsoftTools } from '../tools/microsoft';
+import { Agent } from "@mastra/core"
+import { policyTools } from "../tools/policy"
+import { githubTools } from "../tools/github"
+import { microsoftTools } from "../tools/microsoft"
 
 export const governanceAssistant = new Agent({
-  name: 'Governance Assistant',
-  description: 'Helps staff understand policies, suggest changes, and manage policy workflows',
-  
-  tools: [
-    ...policyTools,
-    ...githubTools,
-    ...microsoftTools,
-  ],
-  
+  name: "Governance Assistant",
+  description:
+    "Helps staff understand policies, suggest changes, and manage policy workflows",
+
+  tools: [...policyTools, ...githubTools, ...microsoftTools],
+
   systemPrompt: `You are the Governance Assistant, helping staff with company policies.
 
 Your responsibilities:
@@ -141,7 +138,7 @@ Key principles:
 - Attribute information to specific rule IDs when answering compliance questions
 
 You have access to the policy-governance skill for detailed workflow guidance.`,
-});
+})
 ```
 
 ### User Context
@@ -150,12 +147,12 @@ The agent receives user context from the SharePoint integration:
 
 ```typescript
 interface UserContext {
-  email: string;                    // Azure AD email
-  displayName: string;
-  roles: ('staff' | 'policy_owner' | 'domain_owner' | 'admin')[];
-  ownedPolicies?: string[];         // Policy IDs if policy_owner
-  ownedDomains?: string[];          // Domain names if domain_owner
-  currentPolicyId?: string;         // If viewing a specific policy page
+  email: string // Azure AD email
+  displayName: string
+  roles: ("staff" | "policy_owner" | "domain_owner" | "admin")[]
+  ownedPolicies?: string[] // Policy IDs if policy_owner
+  ownedDomains?: string[] // Domain names if domain_owner
+  currentPolicyId?: string // If viewing a specific policy page
 }
 ```
 
@@ -169,74 +166,78 @@ This context is passed with each request and used by tools for permission checki
 
 These tools interact with the Postgres search index and GitHub policy repository.
 
-| Tool | Purpose | Access |
-|------|---------|--------|
-| `query_policies` | Hybrid search for relevant policies | All |
-| `search_rules` | Semantic search on rules only | All |
-| `get_policy` | Retrieve full policy content from GitHub | All |
-| `get_rules_by_filter` | Filter rules by domain, severity, keywords | All |
-| `find_related_policies` | Traverse policy relationships | All |
+| Tool                    | Purpose                                    | Access |
+| ----------------------- | ------------------------------------------ | ------ |
+| `query_policies`        | Hybrid search for relevant policies        | All    |
+| `search_rules`          | Semantic search on rules only              | All    |
+| `get_policy`            | Retrieve full policy content from GitHub   | All    |
+| `get_rules_by_filter`   | Filter rules by domain, severity, keywords | All    |
+| `find_related_policies` | Traverse policy relationships              | All    |
 
 #### `query_policies`
 
 ```typescript
 // mastra/tools/policy/query-policies.ts
 
-import { Tool } from '@mastra/core';
-import { db } from '../../lib/db';
+import { Tool } from "@mastra/core"
+import { db } from "../../lib/db"
 
 export const queryPolicies = new Tool({
-  name: 'query_policies',
-  description: 'Search for policies relevant to a query using hybrid search (vector + keyword + metadata)',
-  
+  name: "query_policies",
+  description:
+    "Search for policies relevant to a query using hybrid search (vector + keyword + metadata)",
+
   parameters: {
     query: {
-      type: 'string',
-      description: 'Natural language query',
+      type: "string",
+      description: "Natural language query",
       required: true,
     },
     domains: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Filter by domains (optional)',
+      type: "array",
+      items: { type: "string" },
+      description: "Filter by domains (optional)",
       required: false,
     },
     status: {
-      type: 'string',
-      enum: ['active', 'draft', 'under_review', 'archived'],
-      description: 'Filter by status (default: active)',
+      type: "string",
+      enum: ["active", "draft", "under_review", "archived"],
+      description: "Filter by status (default: active)",
       required: false,
     },
     limit: {
-      type: 'number',
-      description: 'Maximum results (default: 5)',
+      type: "number",
+      description: "Maximum results (default: 5)",
       required: false,
     },
   },
-  
-  execute: async ({ query, domains, status = 'active', limit = 5 }, context) => {
+
+  execute: async (
+    { query, domains, status = "active", limit = 5 },
+    context,
+  ) => {
     // 1. Generate embedding for query
     // 2. Hybrid search: vector similarity + full-text + metadata filter
     // 3. Reciprocal Rank Fusion for scoring
     // 4. Return ranked policy IDs with relevance scores
-    
+
     const results = await db.hybridSearch({
       queryEmbedding: await generateEmbedding(query),
       queryText: query,
       filters: { domains, status },
       limit,
-    });
-    
+    })
+
     return {
-      policies: results.map(r => ({
+      policies: results.map((r) => ({
         policyId: r.policy_id,
         title: r.title,
         score: r.score,
         matchedRules: r.matched_rules,
       })),
-    };
+    }
   },
-});
+})
 ```
 
 #### `get_policy`
@@ -244,56 +245,58 @@ export const queryPolicies = new Tool({
 ```typescript
 // mastra/tools/policy/get-policy.ts
 
-import { Tool } from '@mastra/core';
-import { getGitHubClient } from '../../lib/github-auth';
+import { Tool } from "@mastra/core"
+import { getGitHubClient } from "../../lib/github-auth"
 
 export const getPolicy = new Tool({
-  name: 'get_policy',
-  description: 'Retrieve the full content of a policy from GitHub',
-  
+  name: "get_policy",
+  description: "Retrieve the full content of a policy from GitHub",
+
   parameters: {
     policyId: {
-      type: 'string',
-      description: 'Policy ID (e.g., IT-001)',
+      type: "string",
+      description: "Policy ID (e.g., IT-001)",
       required: true,
     },
   },
-  
+
   execute: async ({ policyId }, context) => {
-    const github = await getGitHubClient();
-    
+    const github = await getGitHubClient()
+
     // Construct file path from policy ID
     const files = await github.repos.getContent({
-      owner: 'company',
-      repo: 'policy-governance',
-      path: 'policies',
-    });
-    
+      owner: "company",
+      repo: "policy-governance",
+      path: "policies",
+    })
+
     // Find matching policy file
-    const policyFile = files.data.find(f => 
-      f.name.startsWith(policyId.toLowerCase())
-    );
-    
+    const policyFile = files.data.find((f) =>
+      f.name.startsWith(policyId.toLowerCase()),
+    )
+
     if (!policyFile) {
-      return { error: `Policy ${policyId} not found` };
+      return { error: `Policy ${policyId} not found` }
     }
-    
+
     const content = await github.repos.getContent({
-      owner: 'company',
-      repo: 'policy-governance',
+      owner: "company",
+      repo: "policy-governance",
       path: policyFile.path,
-    });
-    
+    })
+
     // Decode and return full content
-    const decoded = Buffer.from(content.data.content, 'base64').toString('utf-8');
-    
+    const decoded = Buffer.from(content.data.content, "base64").toString(
+      "utf-8",
+    )
+
     return {
       policyId,
       filename: policyFile.name,
       content: decoded,
-    };
+    }
   },
-});
+})
 ```
 
 ---
@@ -302,81 +305,81 @@ export const getPolicy = new Tool({
 
 These tools are generic GitHub operations that can be reused by other agents/systems. They authenticate using the Policy Bot credentials.
 
-| Tool | Purpose | Access |
-|------|---------|--------|
-| `create_issue` | Create a GitHub issue | All |
-| `get_issue` | Get issue details | All |
-| `list_issues` | List issues with filters | All |
-| `create_branch` | Create a new branch | Owners |
-| `commit_file` | Commit a file to a branch | Owners |
-| `create_pr` | Create a pull request | Owners |
-| `update_pr` | Update PR body/title | Owners |
-| `get_pr` | Get PR details | All |
-| `get_pr_diff` | Get PR diff content | All |
-| `list_prs` | List PRs with filters | All |
-| `merge_pr` | Merge a PR | System (via auto-merge) |
-| `get_file` | Get file content | All |
+| Tool            | Purpose                   | Access                  |
+| --------------- | ------------------------- | ----------------------- |
+| `create_issue`  | Create a GitHub issue     | All                     |
+| `get_issue`     | Get issue details         | All                     |
+| `list_issues`   | List issues with filters  | All                     |
+| `create_branch` | Create a new branch       | Owners                  |
+| `commit_file`   | Commit a file to a branch | Owners                  |
+| `create_pr`     | Create a pull request     | Owners                  |
+| `update_pr`     | Update PR body/title      | Owners                  |
+| `get_pr`        | Get PR details            | All                     |
+| `get_pr_diff`   | Get PR diff content       | All                     |
+| `list_prs`      | List PRs with filters     | All                     |
+| `merge_pr`      | Merge a PR                | System (via auto-merge) |
+| `get_file`      | Get file content          | All                     |
 
 #### `create_issue`
 
 ```typescript
 // mastra/tools/github/create-issue.ts
 
-import { Tool } from '@mastra/core';
-import { getGitHubClient } from '../../lib/github-auth';
+import { Tool } from "@mastra/core"
+import { getGitHubClient } from "../../lib/github-auth"
 
 export const createIssue = new Tool({
-  name: 'create_issue',
-  description: 'Create a GitHub issue',
-  
+  name: "create_issue",
+  description: "Create a GitHub issue",
+
   parameters: {
     repo: {
-      type: 'string',
-      description: 'Repository name',
+      type: "string",
+      description: "Repository name",
       required: true,
     },
     title: {
-      type: 'string',
-      description: 'Issue title',
+      type: "string",
+      description: "Issue title",
       required: true,
     },
     body: {
-      type: 'string',
-      description: 'Issue body (markdown)',
+      type: "string",
+      description: "Issue body (markdown)",
       required: true,
     },
     labels: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Labels to apply',
+      type: "array",
+      items: { type: "string" },
+      description: "Labels to apply",
       required: false,
     },
   },
-  
+
   execute: async ({ repo, title, body, labels = [] }, context) => {
-    const github = await getGitHubClient();
-    
+    const github = await getGitHubClient()
+
     // Add attribution to body
     const attributedBody = `${body}
 
 ---
 *Submitted by: ${context.user.email}*
-*Via: Governance Assistant*`;
-    
+*Via: Governance Assistant*`
+
     const issue = await github.issues.create({
-      owner: 'company',
+      owner: "company",
       repo,
       title,
       body: attributedBody,
       labels,
-    });
-    
+    })
+
     return {
       issueNumber: issue.data.number,
       url: issue.data.html_url,
-    };
+    }
   },
-});
+})
 ```
 
 #### `create_pr`
@@ -384,59 +387,59 @@ export const createIssue = new Tool({
 ```typescript
 // mastra/tools/github/create-pr.ts
 
-import { Tool } from '@mastra/core';
-import { getGitHubClient } from '../../lib/github-auth';
+import { Tool } from "@mastra/core"
+import { getGitHubClient } from "../../lib/github-auth"
 
 export const createPr = new Tool({
-  name: 'create_pr',
-  description: 'Create a pull request',
-  
+  name: "create_pr",
+  description: "Create a pull request",
+
   parameters: {
     repo: {
-      type: 'string',
-      description: 'Repository name',
+      type: "string",
+      description: "Repository name",
       required: true,
     },
     title: {
-      type: 'string',
-      description: 'PR title',
+      type: "string",
+      description: "PR title",
       required: true,
     },
     body: {
-      type: 'string',
-      description: 'PR body (markdown)',
+      type: "string",
+      description: "PR body (markdown)",
       required: true,
     },
     head: {
-      type: 'string',
-      description: 'Source branch',
+      type: "string",
+      description: "Source branch",
       required: true,
     },
     base: {
-      type: 'string',
-      description: 'Target branch (default: main)',
+      type: "string",
+      description: "Target branch (default: main)",
       required: false,
     },
   },
-  
-  execute: async ({ repo, title, body, head, base = 'main' }, context) => {
-    const github = await getGitHubClient();
-    
+
+  execute: async ({ repo, title, body, head, base = "main" }, context) => {
+    const github = await getGitHubClient()
+
     const pr = await github.pulls.create({
-      owner: 'company',
+      owner: "company",
       repo,
       title,
       body,
       head,
       base,
-    });
-    
+    })
+
     return {
       prNumber: pr.data.number,
       url: pr.data.html_url,
-    };
+    }
   },
-});
+})
 ```
 
 ---
@@ -445,46 +448,46 @@ export const createPr = new Tool({
 
 These tools interact with Microsoft 365 via Graph API.
 
-| Tool | Purpose | Access |
-|------|---------|--------|
+| Tool                 | Purpose                           | Access |
+| -------------------- | --------------------------------- | ------ |
 | `send_teams_message` | Send a Teams chat/channel message | System |
-| `send_email` | Send an email | System |
-| `get_user_info` | Get user details from Azure AD | All |
+| `send_email`         | Send an email                     | System |
+| `get_user_info`      | Get user details from Azure AD    | All    |
 
 #### `send_teams_message`
 
 ```typescript
 // mastra/tools/microsoft/send-teams-message.ts
 
-import { Tool } from '@mastra/core';
-import { getGraphClient } from '../../lib/graph-auth';
+import { Tool } from "@mastra/core"
+import { getGraphClient } from "../../lib/graph-auth"
 
 export const sendTeamsMessage = new Tool({
-  name: 'send_teams_message',
-  description: 'Send a message via Microsoft Teams',
-  
+  name: "send_teams_message",
+  description: "Send a message via Microsoft Teams",
+
   parameters: {
     recipientEmail: {
-      type: 'string',
-      description: 'Recipient email address',
+      type: "string",
+      description: "Recipient email address",
       required: true,
     },
     message: {
-      type: 'string',
-      description: 'Message content (markdown supported)',
+      type: "string",
+      description: "Message content (markdown supported)",
       required: true,
     },
   },
-  
+
   execute: async ({ recipientEmail, message }, context) => {
-    const graph = await getGraphClient();
-    
+    const graph = await getGraphClient()
+
     // Send via Teams chat
     // Implementation depends on Teams setup (1:1 chat vs bot)
-    
-    return { sent: true };
+
+    return { sent: true }
   },
-});
+})
 ```
 
 ---
@@ -564,14 +567,14 @@ See [references/domain-routing.md](references/domain-routing.md) for routing rul
 
 ## Permission Model
 
-| Action | Required Role |
-|--------|---------------|
-| Query policies | Any staff |
-| Submit suggestion | Any staff |
-| View own suggestions | Any staff |
-| Edit policy | Policy owner (for that policy) |
-| Approve changes | Domain owner (for affected domains) |
-| View all status | Admin |
+| Action               | Required Role                       |
+| -------------------- | ----------------------------------- |
+| Query policies       | Any staff                           |
+| Submit suggestion    | Any staff                           |
+| View own suggestions | Any staff                           |
+| Edit policy          | Policy owner (for that policy)      |
+| Approve changes      | Domain owner (for affected domains) |
+| View all status      | Admin                               |
 
 Always check `context.roles` and `context.ownedPolicies`/`context.ownedDomains` before executing privileged operations.
 ```
@@ -585,7 +588,7 @@ Always check `context.roles` and `context.ownedPolicies`/`context.ownedDomains` 
 
 When creating a PR for policy changes, use this format:
 
-~~~markdown
+```markdown
 ## Summary
 
 Brief description of what changed and why.
@@ -597,20 +600,21 @@ Brief description of what changed and why.
 
 ## Approval Status
 
-| Domain | Required Approver | Status | Approved By | Date |
-|--------|-------------------|--------|-------------|------|
-| IT | it.security@company.com | ⏳ Pending | - | - |
-| HR | hr.team@company.com | ⏳ Pending | - | - |
+| Domain | Required Approver       | Status     | Approved By | Date |
+| ------ | ----------------------- | ---------- | ----------- | ---- |
+| IT     | it.security@company.com | ⏳ Pending | -           | -    |
+| HR     | hr.team@company.com     | ⏳ Pending | -           | -    |
 
 ---
-*Managed by Policy Bot. Do not edit manually.*
+
+_Managed by Policy Bot. Do not edit manually._
 
 ## Metadata
 
 - Requested by: jane.smith@company.com
 - Policy: IT-001
 - Request ID: suggestion-12345
-~~~
+```
 
 ## Recording Approvals
 
@@ -622,11 +626,13 @@ When a domain owner approves:
    - Date: `{ISO date}`
 
 2. Add a comment:
-   ```
-   ✅ Approved by @jane.smith@company.com for domain IT
-   
-   Recorded: 2026-01-26T14:30:00Z
-   ```
+```
+
+✅ Approved by @jane.smith@company.com for domain IT
+
+Recorded: 2026-01-26T14:30:00Z
+
+```
 
 3. If all domains approved, add label `ready-to-merge`
 
@@ -635,76 +641,202 @@ When a domain owner approves:
 When a domain owner rejects:
 
 1. Update the approval table row:
-   - Status: `❌ Rejected`
+- Status: `❌ Rejected`
 
 2. Add a comment with the reason:
-   ```
-   ❌ Rejected by @jane.smith@company.com for domain IT
-   
-   Reason: The proposed exception is too broad. Please narrow the scope.
-   
-   Recorded: 2026-01-26T14:30:00Z
-   ```
+```
+
+❌ Rejected by @jane.smith@company.com for domain IT
+
+Reason: The proposed exception is too broad. Please narrow the scope.
+
+Recorded: 2026-01-26T14:30:00Z
+
+```
 
 3. Notify the PR author to revise
 ```
 
 ### references/domain-routing.md
 
-```markdown
+````markdown
 # Domain Routing Reference
+
+## Configuration Architecture
+
+All configuration is stored in the Postgres database for fast access and single source of truth:
+
+| Configuration       | Storage                                             | Source                                        | Update Method           |
+| ------------------- | --------------------------------------------------- | --------------------------------------------- | ----------------------- |
+| Domain ownership    | Database (`config.domains`, `config.domain_owners`) | Managed via Central Service API               | Direct database updates |
+| Repository workflow | Database (`config.repository_config`)               | Declared in repo's `metadata/governance.yaml` | Synced on push webhook  |
 
 ## Determining Required Approvers
 
-When a policy change is submitted:
+When a policy change is submitted (PR opened/updated):
 
 1. Parse the PR diff to identify changed rules
 2. Extract the `domain` field from each changed rule
-3. Look up domain owners from `metadata/domains.yaml` in the policy repo
-4. Add each unique domain owner to the approval table
+3. **Query database for domain owners** (fast lookup, no file fetching):
+   ```sql
+   SELECT do.email, do.name, do.role, d.name as domain_name
+   FROM config.domain_owners do
+   JOIN config.domains d ON do.domain_id = d.id
+   WHERE d.id = ANY($1::text[])
+   ```
+````
 
-## domains.yaml Format
+4. Get repository config from database:
+   ```sql
+   SELECT *
+   FROM config.repository_config
+   WHERE repo_full_name = $1
+   ```
+5. Check cross-domain rules from database
+6. Add each unique domain owner to the approval table
+
+## Database Schema Reference
+
+### Domains Table
+
+```sql
+CREATE TABLE config.domains (
+    id              TEXT PRIMARY KEY,           -- 'IT', 'HR', 'Finance'
+    name            TEXT NOT NULL,              -- 'Information Technology'
+    description     TEXT,
+    contact_email   TEXT,
+    teams_channel   TEXT,
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE config.domain_owners (
+    domain_id       TEXT REFERENCES config.domains(id) ON DELETE CASCADE,
+    email           TEXT NOT NULL,              -- Azure AD email
+    name            TEXT,
+    role            TEXT,
+    added_at        TIMESTAMPTZ DEFAULT NOW(),
+    added_by        TEXT,
+    PRIMARY KEY (domain_id, email)
+);
+
+CREATE TABLE config.domain_scope (
+    domain_id       TEXT REFERENCES config.domains(id) ON DELETE CASCADE,
+    scope_item      TEXT NOT NULL,
+    sort_order      INTEGER,
+    PRIMARY KEY (domain_id, scope_item)
+);
+```
+
+### Repository Config Table
+
+```sql
+CREATE TABLE config.repository_config (
+    repo_full_name          TEXT PRIMARY KEY,
+    document_type           TEXT NOT NULL,
+    approval_required       BOOLEAN DEFAULT TRUE,
+    domain_approval         BOOLEAN DEFAULT TRUE,
+    owner_approval          BOOLEAN DEFAULT TRUE,
+    auto_merge_enabled      BOOLEAN DEFAULT FALSE,
+    auto_merge_after_hours  INTEGER,
+    notify_on_pr_open       BOOLEAN DEFAULT TRUE,
+    reminder_after_hours    INTEGER DEFAULT 48,
+    escalate_after_hours    INTEGER DEFAULT 120,
+    notification_channels   TEXT[] DEFAULT ARRAY['email'],
+    config_file_path        TEXT DEFAULT 'metadata/governance.yaml',
+    config_sha              TEXT,
+    synced_at               TIMESTAMPTZ,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE config.cross_domain_rules (
+    id                  SERIAL PRIMARY KEY,
+    repo_full_name      TEXT REFERENCES config.repository_config(repo_full_name) ON DELETE CASCADE,
+    rule_pattern        TEXT NOT NULL,
+    required_domains    TEXT[] NOT NULL,
+    description         TEXT,
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+## governance.yaml Format (Content Repo)
+
+Each content repository declares its workflow configuration:
 
 ```yaml
-domains:
-  IT:
-    name: Information Technology
-    owners:
-      - it.security@company.com
-      - cto@company.com
-    
-  HR:
-    name: Human Resources
-    owners:
-      - hr.director@company.com
-      - hr.team@company.com
-    
-  Finance:
-    name: Finance
-    owners:
-      - cfo@company.com
-      - finance.team@company.com
-    
-  Legal:
-    name: Legal & Compliance
-    owners:
-      - legal@company.com
+# metadata/governance.yaml - Syncs to database on push
+document_type: policies
+
+approval:
+  required: true
+  domain_approval: true
+  owner_approval: true
+  auto_merge:
+    enabled: false
+    after_hours: 24
+
+notifications:
+  on_pr_open: true
+  channels:
+    - email
+    - teams
+  reminder_after_hours: 48
+  escalate_after_hours: 120
+
+cross_domain_rules:
+  - pattern: "travel.*high-risk|restricted.*territory"
+    domains: [IT, HR]
+    description: Travel to high-risk jurisdictions
+
+  - pattern: "remote.*work|work.*from.*home"
+    domains: [HR, IT]
+    description: Remote working arrangements
 ```
 
 ## Routing Logic
 
-1. If a rule's domain is in domains.yaml → require approval from that domain's owners
-2. If a rule's domain is NOT in domains.yaml → require approval from policy owner only
+1. If a rule's domain exists in database → require approval from that domain's owners (query `config.domain_owners`)
+2. If a rule's domain is NOT in database → require approval from policy owner only
 3. If only prose changed (no rule changes) → require approval from policy owner only
 4. Policy owner is always implicitly approved (they created the PR)
+5. Check `config.cross_domain_rules` for patterns requiring multiple domain approvals
+6. Apply notification settings from `config.repository_config`
 
 ## Cross-Domain Changes
 
 If a change affects rules in multiple domains (e.g., IT and HR):
+
 - ALL affected domains must approve
 - PR cannot merge until all approvals received
 - Any rejection blocks the PR
+
+## Domain Management
+
+Domains are managed via the Central Service (API or admin UI), not via repository files. This example shows how to add a domain owner:
+
+```typescript
+// Add a domain owner
+await db.domainOwners.create({
+  data: {
+    domain_id: "IT",
+    email: "new.owner@company.com",
+    name: "New Owner",
+    role: "IT Manager",
+    added_by: "admin@company.com",
+  },
+})
 ```
+
+## Benefits of Database-First Approach
+
+- **Fast PR handling**: No GitHub API calls needed to fetch config files
+- **Single source of truth**: All configuration in one database
+- **Declarative repos**: Content repos declare their workflow settings
+- **Auto-sync**: Config syncs automatically on push
+- **Centralized management**: Domain ownership managed via API/admin UI
+
+````
 
 ### references/compliance-responses.md
 
@@ -715,7 +847,8 @@ If a change affects rules in multiple domains (e.g., IT and HR):
 
 When answering "Can I do X?" questions:
 
-```
+````
+
 Based on [Policy Name] (specifically rule {rule-id}):
 
 {Clear yes/no/conditional answer}
@@ -725,6 +858,7 @@ Based on [Policy Name] (specifically rule {rule-id}):
 {Any relevant exceptions}
 
 {Next steps if action required}
+
 ```
 
 ## Example Response
@@ -732,27 +866,30 @@ Based on [Policy Name] (specifically rule {rule-id}):
 User: "Can I take my laptop to China for a client visit?"
 
 ```
+
 Based on the Information Security Policy and Travel Policy:
 
 **You can, but with conditions:**
 
-1. Per IT-001-R007 (MUST): Devices taken to high-risk jurisdictions 
-   require a pre-travel security assessment. China is classified as 
+1. Per IT-001-R007 (MUST): Devices taken to high-risk jurisdictions
+   require a pre-travel security assessment. China is classified as
    high-risk under SEC-001-R003.
 
-2. Per HR-001-R012 (MUST): Travel to restricted territories requires 
+2. Per HR-001-R012 (MUST): Travel to restricted territories requires
    approval 14 days in advance.
 
-3. Per IT-001-R009 (MUST NOT): Devices containing [sensitive data 
-   classification] cannot be taken to China. You'll need a clean 
+3. Per IT-001-R009 (MUST NOT): Devices containing [sensitive data
+   classification] cannot be taken to China. You'll need a clean
    travel device from IT.
 
 **Actions needed:**
+
 - Submit travel request (at least 14 days before)
 - Request a travel device from IT Support
 - Complete the pre-travel security briefing
 
 Would you like me to help start the travel request?
+
 ```
 
 ## When Uncertain
@@ -760,17 +897,20 @@ Would you like me to help start the travel request?
 If search results are inconclusive:
 
 ```
-I couldn't find a definitive answer in our policies for this 
+
+I couldn't find a definitive answer in our policies for this
 specific situation.
 
 These policies might be relevant:
+
 - [Information Security Policy](/sites/policies/SitePages/IT-001-information-security.aspx)
 - [Travel Policy](/sites/policies/SitePages/HR-001-travel.aspx)
 
 You can browse all policies here: [Policy Library](/sites/policies)
 
-Or contact [Policy Owner Name] (policy.owner@company.com) for 
+Or contact [Policy Owner Name] (policy.owner@company.com) for
 clarification on this specific case.
+
 ```
 
 ## Never Do
@@ -794,38 +934,40 @@ Combines: validation + `create_issue` + audit logging
 ```typescript
 // mastra/tools/policy/submit-suggestion.ts
 
-import { Tool } from '@mastra/core';
-import { createIssue } from '../github/create-issue';
-import { db } from '../../lib/db';
+import { Tool } from "@mastra/core"
+import { createIssue } from "../github/create-issue"
+import { db } from "../../lib/db"
 
 export const submitSuggestion = new Tool({
-  name: 'submit_suggestion',
-  description: 'Submit a policy change suggestion (creates GitHub issue and logs to audit)',
-  
+  name: "submit_suggestion",
+  description:
+    "Submit a policy change suggestion (creates GitHub issue and logs to audit)",
+
   parameters: {
     policyId: {
-      type: 'string',
-      description: 'Policy ID to suggest change for',
+      type: "string",
+      description: "Policy ID to suggest change for",
       required: true,
     },
     summary: {
-      type: 'string',
-      description: 'Brief summary of suggested change',
+      type: "string",
+      description: "Brief summary of suggested change",
       required: true,
     },
     details: {
-      type: 'string',
-      description: 'Detailed description of the change and rationale',
+      type: "string",
+      description: "Detailed description of the change and rationale",
       required: true,
     },
   },
-  
+
   execute: async ({ policyId, summary, details }, context) => {
     // Create GitHub issue
-    const issue = await createIssue.execute({
-      repo: 'policy-governance',
-      title: `[Suggestion] ${policyId}: ${summary}`,
-      body: `## Suggested Change
+    const issue = await createIssue.execute(
+      {
+        repo: "policy-governance",
+        title: `[Suggestion] ${policyId}: ${summary}`,
+        body: `## Suggested Change
 
 ${details}
 
@@ -834,26 +976,28 @@ ${policyId}
 
 ## Submitted By
 ${context.user.email}`,
-      labels: ['suggestion', `policy:${policyId}`],
-    }, context);
-    
+        labels: ["suggestion", `policy:${policyId}`],
+      },
+      context,
+    )
+
     // Audit log
     await db.auditLog.insert({
-      action: 'suggestion_submitted',
+      action: "suggestion_submitted",
       user: context.user.email,
       policyId,
       issueNumber: issue.issueNumber,
       timestamp: new Date(),
-    });
-    
+    })
+
     return {
       success: true,
       issueNumber: issue.issueNumber,
       issueUrl: issue.url,
       message: `Suggestion submitted successfully. The policy owner will be notified.`,
-    };
+    }
   },
-});
+})
 ```
 
 ### `approve_change` (Composite)
@@ -863,101 +1007,114 @@ Combines: permission check + `update_pr` + `create_issue_comment` + audit loggin
 ```typescript
 // mastra/tools/policy/approve-change.ts
 
-import { Tool } from '@mastra/core';
-import { getPr, updatePr } from '../github';
-import { db } from '../../lib/db';
+import { Tool } from "@mastra/core"
+import { getPr, updatePr } from "../github"
+import { db } from "../../lib/db"
 
 export const approveChange = new Tool({
-  name: 'approve_change',
-  description: 'Approve a policy change PR for a specific domain',
-  
+  name: "approve_change",
+  description: "Approve a policy change PR for a specific domain",
+
   parameters: {
     prNumber: {
-      type: 'number',
-      description: 'PR number to approve',
+      type: "number",
+      description: "PR number to approve",
       required: true,
     },
     domain: {
-      type: 'string',
-      description: 'Domain being approved for',
+      type: "string",
+      description: "Domain being approved for",
       required: true,
     },
     comment: {
-      type: 'string',
-      description: 'Optional approval comment',
+      type: "string",
+      description: "Optional approval comment",
       required: false,
     },
   },
-  
+
   execute: async ({ prNumber, domain, comment }, context) => {
     // Check permission
     if (!context.user.ownedDomains?.includes(domain)) {
       return {
         success: false,
         error: `You are not an owner of the ${domain} domain`,
-      };
+      }
     }
-    
+
     // Get current PR
-    const pr = await getPr.execute({ 
-      repo: 'policy-governance', 
-      prNumber 
-    }, context);
-    
+    const pr = await getPr.execute(
+      {
+        repo: "policy-governance",
+        prNumber,
+      },
+      context,
+    )
+
     // Update approval table in PR body
     const updatedBody = updateApprovalTable(pr.body, {
       domain,
-      status: '✅ Approved',
+      status: "✅ Approved",
       approvedBy: context.user.email,
-      date: new Date().toISOString().split('T')[0],
-    });
-    
-    await updatePr.execute({
-      repo: 'policy-governance',
-      prNumber,
-      body: updatedBody,
-    }, context);
-    
-    // Add comment
-    await createIssueComment.execute({
-      repo: 'policy-governance',
-      issueNumber: prNumber,
-      body: `✅ Approved by ${context.user.email} for domain ${domain}
+      date: new Date().toISOString().split("T")[0],
+    })
 
-${comment ? `Comment: ${comment}` : ''}
+    await updatePr.execute(
+      {
+        repo: "policy-governance",
+        prNumber,
+        body: updatedBody,
+      },
+      context,
+    )
+
+    // Add comment
+    await createIssueComment.execute(
+      {
+        repo: "policy-governance",
+        issueNumber: prNumber,
+        body: `✅ Approved by ${context.user.email} for domain ${domain}
+
+${comment ? `Comment: ${comment}` : ""}
 
 Recorded: ${new Date().toISOString()}`,
-    }, context);
-    
+      },
+      context,
+    )
+
     // Audit log
     await db.auditLog.insert({
-      action: 'change_approved',
+      action: "change_approved",
       user: context.user.email,
       prNumber,
       domain,
       timestamp: new Date(),
-    });
-    
+    })
+
     // Check if all approvals complete
-    const allApproved = checkAllApproved(updatedBody);
+    const allApproved = checkAllApproved(updatedBody)
     if (allApproved) {
       // Add ready-to-merge label (auto-merge workflow will handle)
-      await addLabel.execute({
-        repo: 'policy-governance',
-        issueNumber: prNumber,
-        labels: ['ready-to-merge'],
-      }, context);
+      await addLabel.execute(
+        {
+          repo: "policy-governance",
+          issueNumber: prNumber,
+          labels: ["ready-to-merge"],
+        },
+        context,
+      )
     }
-    
+
     return {
       success: true,
       allApproved,
-      message: allApproved 
-        ? 'All approvals received. The change will be merged automatically.'
-        : 'Approval recorded. Waiting for other domain approvals.',
-    };
+      message:
+        allApproved ?
+          "All approvals received. The change will be merged automatically."
+        : "Approval recorded. Waiting for other domain approvals.",
+    }
   },
-});
+})
 ```
 
 ---
@@ -966,47 +1123,47 @@ Recorded: ${new Date().toISOString()}`,
 
 ### Policy Tools
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `query_policies` | Hybrid search for policies | `query`, `domains?`, `status?`, `limit?` |
-| `search_rules` | Semantic search on rules | `query`, `severity?`, `domain?`, `limit?` |
-| `get_policy` | Get full policy content | `policyId` |
-| `get_rules_by_filter` | Filter rules by criteria | `domain?`, `severity?`, `policyId?` |
-| `find_related_policies` | Get related policies | `policyId` |
-| `submit_suggestion` | Submit a change suggestion | `policyId`, `summary`, `details` |
-| `get_my_suggestions` | List user's suggestions | `status?` |
-| `create_change` | Create branch + PR for edit | `policyId`, `changes`, `summary` |
-| `update_change` | Update existing PR | `prNumber`, `changes` |
-| `get_pending_approvals` | List PRs needing user's approval | - |
-| `get_change_diff` | Get PR diff | `prNumber` |
-| `approve_change` | Approve a PR | `prNumber`, `domain`, `comment?` |
-| `reject_change` | Reject a PR | `prNumber`, `domain`, `reason` |
-| `get_policy_status` | List policies with status | `filter?` |
+| Tool                    | Description                      | Parameters                                |
+| ----------------------- | -------------------------------- | ----------------------------------------- |
+| `query_policies`        | Hybrid search for policies       | `query`, `domains?`, `status?`, `limit?`  |
+| `search_rules`          | Semantic search on rules         | `query`, `severity?`, `domain?`, `limit?` |
+| `get_policy`            | Get full policy content          | `policyId`                                |
+| `get_rules_by_filter`   | Filter rules by criteria         | `domain?`, `severity?`, `policyId?`       |
+| `find_related_policies` | Get related policies             | `policyId`                                |
+| `submit_suggestion`     | Submit a change suggestion       | `policyId`, `summary`, `details`          |
+| `get_my_suggestions`    | List user's suggestions          | `status?`                                 |
+| `create_change`         | Create branch + PR for edit      | `policyId`, `changes`, `summary`          |
+| `update_change`         | Update existing PR               | `prNumber`, `changes`                     |
+| `get_pending_approvals` | List PRs needing user's approval | -                                         |
+| `get_change_diff`       | Get PR diff                      | `prNumber`                                |
+| `approve_change`        | Approve a PR                     | `prNumber`, `domain`, `comment?`          |
+| `reject_change`         | Reject a PR                      | `prNumber`, `domain`, `reason`            |
+| `get_policy_status`     | List policies with status        | `filter?`                                 |
 
 ### GitHub Tools (Generic)
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `create_issue` | Create issue | `repo`, `title`, `body`, `labels?` |
-| `get_issue` | Get issue details | `repo`, `issueNumber` |
-| `list_issues` | List issues | `repo`, `labels?`, `state?`, `creator?` |
-| `create_branch` | Create branch | `repo`, `branchName`, `fromRef?` |
-| `commit_file` | Commit file | `repo`, `branch`, `path`, `content`, `message` |
-| `create_pr` | Create PR | `repo`, `title`, `body`, `head`, `base?` |
-| `update_pr` | Update PR | `repo`, `prNumber`, `title?`, `body?` |
-| `get_pr` | Get PR details | `repo`, `prNumber` |
-| `get_pr_diff` | Get PR diff | `repo`, `prNumber` |
-| `list_prs` | List PRs | `repo`, `state?`, `labels?` |
-| `merge_pr` | Merge PR | `repo`, `prNumber`, `mergeMethod?` |
-| `get_file` | Get file content | `repo`, `path`, `ref?` |
+| Tool            | Description       | Parameters                                     |
+| --------------- | ----------------- | ---------------------------------------------- |
+| `create_issue`  | Create issue      | `repo`, `title`, `body`, `labels?`             |
+| `get_issue`     | Get issue details | `repo`, `issueNumber`                          |
+| `list_issues`   | List issues       | `repo`, `labels?`, `state?`, `creator?`        |
+| `create_branch` | Create branch     | `repo`, `branchName`, `fromRef?`               |
+| `commit_file`   | Commit file       | `repo`, `branch`, `path`, `content`, `message` |
+| `create_pr`     | Create PR         | `repo`, `title`, `body`, `head`, `base?`       |
+| `update_pr`     | Update PR         | `repo`, `prNumber`, `title?`, `body?`          |
+| `get_pr`        | Get PR details    | `repo`, `prNumber`                             |
+| `get_pr_diff`   | Get PR diff       | `repo`, `prNumber`                             |
+| `list_prs`      | List PRs          | `repo`, `state?`, `labels?`                    |
+| `merge_pr`      | Merge PR          | `repo`, `prNumber`, `mergeMethod?`             |
+| `get_file`      | Get file content  | `repo`, `path`, `ref?`                         |
 
 ### Microsoft Tools (Generic)
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `send_teams_message` | Send Teams message | `recipientEmail`, `message` |
-| `send_email` | Send email | `to`, `subject`, `body` |
-| `get_user_info` | Get Azure AD user info | `email` |
+| Tool                 | Description            | Parameters                  |
+| -------------------- | ---------------------- | --------------------------- |
+| `send_teams_message` | Send Teams message     | `recipientEmail`, `message` |
+| `send_email`         | Send email             | `to`, `subject`, `body`     |
+| `get_user_info`      | Get Azure AD user info | `email`                     |
 
 ---
 
@@ -1017,19 +1174,19 @@ Recorded: ${new Date().toISOString()}`,
 ```typescript
 // lib/github-auth.ts
 
-import { createAppAuth } from '@octokit/auth-app';
-import { Octokit } from '@octokit/rest';
-import { getSecret } from './keyvault';
+import { createAppAuth } from "@octokit/auth-app"
+import { Octokit } from "@octokit/rest"
+import { getSecret } from "./keyvault"
 
-let octokitInstance: Octokit | null = null;
+let octokitInstance: Octokit | null = null
 
 export async function getGitHubClient(): Promise<Octokit> {
-  if (octokitInstance) return octokitInstance;
-  
-  const privateKey = await getSecret('GITHUB_APP_PRIVATE_KEY');
-  const appId = await getSecret('GITHUB_APP_ID');
-  const installationId = await getSecret('GITHUB_INSTALLATION_ID');
-  
+  if (octokitInstance) return octokitInstance
+
+  const privateKey = await getSecret("GITHUB_APP_PRIVATE_KEY")
+  const appId = await getSecret("GITHUB_APP_ID")
+  const installationId = await getSecret("GITHUB_INSTALLATION_ID")
+
   octokitInstance = new Octokit({
     authStrategy: createAppAuth,
     auth: {
@@ -1037,9 +1194,9 @@ export async function getGitHubClient(): Promise<Octokit> {
       privateKey,
       installationId,
     },
-  });
-  
-  return octokitInstance;
+  })
+
+  return octokitInstance
 }
 ```
 
@@ -1048,25 +1205,31 @@ export async function getGitHubClient(): Promise<Octokit> {
 ```typescript
 // lib/graph-auth.ts
 
-import { ClientSecretCredential } from '@azure/identity';
-import { Client } from '@microsoft/microsoft-graph-client';
-import { getSecret } from './keyvault';
+import { ClientSecretCredential } from "@azure/identity"
+import { Client } from "@microsoft/microsoft-graph-client"
+import { getSecret } from "./keyvault"
 
 export async function getGraphClient(): Promise<Client> {
-  const tenantId = await getSecret('AZURE_TENANT_ID');
-  const clientId = await getSecret('AZURE_CLIENT_ID');
-  const clientSecret = await getSecret('AZURE_CLIENT_SECRET');
-  
-  const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-  
+  const tenantId = await getSecret("AZURE_TENANT_ID")
+  const clientId = await getSecret("AZURE_CLIENT_ID")
+  const clientSecret = await getSecret("AZURE_CLIENT_SECRET")
+
+  const credential = new ClientSecretCredential(
+    tenantId,
+    clientId,
+    clientSecret,
+  )
+
   return Client.initWithMiddleware({
     authProvider: {
       getAccessToken: async () => {
-        const token = await credential.getToken('https://graph.microsoft.com/.default');
-        return token.token;
+        const token = await credential.getToken(
+          "https://graph.microsoft.com/.default",
+        )
+        return token.token
       },
     },
-  });
+  })
 }
 ```
 
@@ -1074,6 +1237,8 @@ export async function getGraphClient(): Promise<Client> {
 
 ## Change Log
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 0.1.0 | 2026-01-26 | Duncan / Claude | Initial agent and tools specification |
+| Version | Date       | Author          | Changes                                                                                                                            |
+| ------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-01-26 | Duncan / Claude | Initial agent and tools specification                                                                                              |
+| 0.2.0   | 2026-02-05 | Duncan / Claude | Updated domain routing to reflect split configuration: organisational ownership in Central Service, approval rules in Content Repo |
+| 0.3.0   | 2026-02-05 | Duncan / Claude | Moved all configuration to Postgres database with fast lookups; domain routing now uses database queries instead of file parsing   |

@@ -18,7 +18,7 @@
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start",
-    "supabase:gen-types": "supabase gen types typescript --schema mastra-winston-ai --local > src/types/database.types.ts",
+    "supabase:gen-types": "supabase gen types typescript --schema mastra_store --schema config --local > src/types/database.types.ts",
     "typecheck": "tsc --noEmit",
     "github-app:create": "bun run src/docs-bot/scripts/create-github-app.ts"
   },

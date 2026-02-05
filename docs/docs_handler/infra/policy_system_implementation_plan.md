@@ -55,8 +55,8 @@ Organisation
 
 1. Create content repository (no workflows needed)
 2. Install Docs Bot on the repository
-3. Add configuration entry mapping repo → document type
-4. Create schema, domains.yaml, and agent skill
+3. Add repository config row to database (or create `metadata/governance.yaml` which syncs on first push)
+4. Create schema and agent skill (domain ownership already in database)
 5. Done — webhooks automatically route to central service
 
 ---
@@ -304,7 +304,8 @@ _Managed by Docs Bot. Do not edit manually._
 | ----------------------------- | ------------------------------------------------ |
 | `docs-policy-governance` repo | Empty content repo with folder structure         |
 | `policy.schema.json`          | JSON Schema for frontmatter validation           |
-| `domains.yaml`                | Domain definitions with owners (Azure AD emails) |
+| Database config schema        | `config.domains` tables with seed data           |
+| `metadata/governance.yaml`    | Repository workflow configuration                |
 | First policy converted        | One existing PDF policy in new format            |
 | Docs Bot registered           | GitHub App with webhook configuration            |
 
@@ -313,7 +314,8 @@ _Managed by Docs Bot. Do not edit manually._
 - [x] Create `docs-policy-governance` repository (content only, no workflows)
 - [x] Create folder structure (`policies/`, `schema/`, `metadata/`, `templates/`)
 - [x] Define JSON Schema for policy frontmatter
-- [ ] Create `domains.yaml` with initial domains and owners
+- [x] Create Supabase migration for config schema with seed domain data
+- [x] Create `metadata/governance.yaml` for repository workflow configuration
 - [ ] Convert one existing policy (e.g., IT Security) to frontmatter markdown
 - [x] Create `policy-template.md` for new policies
 - [x] Review and update `github_app_manifest.json` (webhook URL placeholder is OK for now)
@@ -347,14 +349,14 @@ _Managed by Docs Bot. Do not edit manually._
 | Push handler               | Validates, syncs to SharePoint, generates PDF |
 | SharePoint site            | Site with pages for policies                  |
 | Graph API app registration | Azure AD app for SharePoint access            |
-| Document type config       | Mapping for `docs-policy-governance` repo     |
+| Database config synced     | Repository config synced from `governance.yaml` |
 
 ### Tasks
 
 - [x] Integrate `doc-governance-service` in mastra repository — **Implemented:** Webhook handler at `src/mastra/webhooks/github/`
 - [x] Set up Node.js/TypeScript project structure — **Using:** Bun + TypeScript
 - [ ] Implement webhook signature verification
-- [ ] Implement document type configuration loader
+- [ ] Implement database query for repository configuration
 - [ ] Create SharePoint site (`policies.company.com`)
 - [ ] Create Azure AD app registration for Graph API
 - [ ] Grant `Sites.ReadWrite.All` permission (admin consent)
@@ -367,7 +369,7 @@ _Managed by Docs Bot. Do not edit manually._
 - [ ] Create Archive document library for PDFs
 - [ ] Deploy service to Azure Container Apps
 - [ ] Update Docs Bot webhook URL to point to deployed service
-- [ ] Add docs-policy-governance repo to document type config
+- [x] Verify governance.yaml syncs to database on push
 
 ### Validation
 
@@ -697,7 +699,7 @@ Once the platform is proven with policies, adding a new document type (e.g., SOP
 | Install Docs Bot on repo         | Minutes |
 | Add document type configuration  | Hours   |
 | Create schema for new type       | Hours   |
-| Create domains.yaml for new type | Hours   |
+| Seed domain data if needed       | Minutes |
 | Create agent skill for new type  | Days    |
 | Create SharePoint site           | Hours   |
 | Bulk convert existing documents  | Days    |
