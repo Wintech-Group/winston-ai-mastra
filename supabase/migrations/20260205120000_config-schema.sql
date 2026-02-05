@@ -63,6 +63,7 @@ CREATE INDEX idx_domain_owners_domain ON config.domain_owners(domain_id);
 CREATE TABLE config.repository_config (
     repo_full_name          TEXT PRIMARY KEY,       -- 'Wintech-Group/docs-policy-governance'
     document_type           TEXT NOT NULL,          -- 'policies', 'sops', 'tech-docs'
+    document_path           TEXT NOT NULL,          -- Repository path prefix for document paths (e.g., 'policies/')
     
     -- Approval settings
     approval_required       BOOLEAN DEFAULT TRUE NOT NULL,

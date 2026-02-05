@@ -6,6 +6,7 @@
 INSERT INTO config.repository_config (
     repo_full_name,
     document_type,
+    document_path,
     approval_required,
     domain_approval,
     owner_approval,
@@ -17,6 +18,7 @@ INSERT INTO config.repository_config (
 ) VALUES (
     'Wintech-Group/docs-policy-governance',
     'policies',
+    'policies/',
     true,
     true,
     true,
