@@ -1,30 +1,58 @@
 import { registerApiRoute } from "@mastra/core/server"
+import {
+  webhooks,
+  verifyGitHubWebhook,
+} from "../../middleware/verify-github-webhook"
+import type { EmitterWebhookEvent } from "@octokit/webhooks"
 
-/**
- * GitHub webhook endpoint handler
- * Receives webhook events from GitHub (push, pull_request, issues, etc.)
- */
+// Register event handlers with full type safety
+webhooks.on("push", async ({ id, payload }) => {
+  console.log(`[${id}] Push to ${payload.repository.full_name}`)
+  // Your push handler: sync to SharePoint, generate PDF, update index
+})
+
+webhooks.on("pull_request.opened", async ({ id, payload }) => {
+  console.log(`[${id}] PR #${payload.pull_request.number} opened`)
+  // Validate schema, identify domains, add approval table
+})
+
+webhooks.on("pull_request.synchronize", async ({ id, payload }) => {
+  console.log(`[${id}] PR #${payload.pull_request.number} updated`)
+  // Re-validate, update approval table if needed
+})
+
+webhooks.on("issues.opened", async ({ id, payload }) => {
+  console.log(`[${id}] Issue #${payload.issue.number} opened`)
+  // Track as suggestion, notify policy owner
+})
+
+webhooks.on("issue_comment.created", async ({ id, payload }) => {
+  console.log(`[${id}] Comment on #${payload.issue.number}`)
+  // Check for approval commands
+})
+
+webhooks.onError((error) => {
+  console.error("Webhook error:", error)
+})
+
 export const githubWebhookRoute = registerApiRoute("/webhooks/github", {
   method: "POST",
-  requiresAuth: false, // Webhooks need to be publicly accessible
+  requiresAuth: false,
+  middleware: [verifyGitHubWebhook],
   handler: async (c) => {
-    // Get the raw request
-    const body = await c.req.json()
-    const headers = Object.fromEntries(c.req.raw.headers.entries())
+    const payload = c.get("webhookPayload")
+    const event = c.get("webhookEvent")
+    const id = c.get("webhookDeliveryId")
 
-    // Log the webhook event for inspection
-    console.log("=== GitHub Webhook Received ===")
-    console.log("Event Type:", headers["x-github-event"])
-    console.log("Delivery ID:", headers["x-github-delivery"])
-    console.log("Signature:", headers["x-hub-signature-256"])
-    console.log("Headers:", JSON.stringify(headers, null, 2))
-    console.log("Payload:", JSON.stringify(body, null, 2))
-    console.log("================================")
+    console.log(`Received GitHub event: ${event} (Delivery ID: ${id})`)
 
-    // TODO: Implement webhook handling logic:
-    // 1. Verify webhook signature using GITHUB_WEBHOOK_SECRET
-    // 2. Parse event type from X-GitHub-Event header
-    // 3. Route to appropriate handler (push, pull_request, issues, etc.)
+    // Dispatch to registered handlers
+    // Type assertion needed: name↔payload correlation is proven at runtime by GitHub
+    await webhooks.receive({
+      id,
+      name: event,
+      payload,
+    } as EmitterWebhookEvent)
 
     return c.json({ received: true })
   },

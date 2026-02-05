@@ -311,21 +311,21 @@ _Managed by Docs Bot. Do not edit manually._
 ### Tasks
 
 - [x] Create `docs-policy-governance` repository (content only, no workflows)
-- [ ] Create folder structure (`policies/`, `schema/`, `metadata/`, `templates/`)
-- [ ] Define JSON Schema for policy frontmatter
+- [x] Create folder structure (`policies/`, `schema/`, `metadata/`, `templates/`)
+- [x] Define JSON Schema for policy frontmatter
 - [ ] Create `domains.yaml` with initial domains and owners
 - [ ] Convert one existing policy (e.g., IT Security) to frontmatter markdown
 - [x] Create `policy-template.md` for new policies
 - [x] Review and update `github_app_manifest.json` (webhook URL placeholder is OK for now)
 - [x] Create Docs Bot from manifest using GitHub App Manifest flow
-- [ ] Generate and securely store bot private key (Azure Key Vault)
-- [x] Install Docs Bot on `docs-policy-governance` repository
-- [ ] Record App ID and Installation ID for service configuration
+- [x] Generate and add verification for Github App secret
+- [x] Install Docs Bot on `docs-policy-governance` repository (Installation ID: 107965932)
+- [x] Record App ID and Installation ID for service configuration
 
 ### Validation
 
 - [ ] Policy file passes schema validation (manual)
-- [ ] Docs Bot can read repository contents
+- [x] Docs Bot can read repository contents — **Validated:** Webhook receiving push events successfully
 - [ ] Docs Bot can create a test branch and commit
 
 ---
@@ -351,8 +351,8 @@ _Managed by Docs Bot. Do not edit manually._
 
 ### Tasks
 
-- [ ] Integrate `doc-governance-service` in mastra repository
-- [ ] Set up Node.js/TypeScript project structure
+- [x] Integrate `doc-governance-service` in mastra repository — **Implemented:** Webhook handler at `src/mastra/webhooks/github/`
+- [x] Set up Node.js/TypeScript project structure — **Using:** Bun + TypeScript
 - [ ] Implement webhook signature verification
 - [ ] Implement document type configuration loader
 - [ ] Create SharePoint site (`policies.company.com`)
@@ -371,7 +371,7 @@ _Managed by Docs Bot. Do not edit manually._
 
 ### Validation
 
-- [ ] Webhook received when PR merged
+- [x] Webhook received when PR merged — **Validated:** Push events received successfully (see [sample-webhook-response.txt](../../../sample-webhook-response.txt))
 - [ ] Edit policy in GitHub, merge PR
 - [ ] SharePoint page updates automatically
 - [ ] PDF appears in library

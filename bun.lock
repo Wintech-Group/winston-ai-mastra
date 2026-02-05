@@ -12,6 +12,9 @@
         "@mastra/memory": "^1.0.1",
         "@mastra/observability": "^1.1.0",
         "@mastra/pg": "^1.1.0",
+        "@octokit/webhooks": "^14.2.0",
+        "@octokit/webhooks-types": "^7.6.1",
+        "hono": "^4.11.7",
         "zod": "4",
       },
       "devDependencies": {
@@ -232,6 +235,20 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
+
+    "@octokit/openapi-types": ["@octokit/openapi-types@27.0.0", "", {}, "sha512-whrdktVs1h6gtR+09+QsNk2+FO+49j6ga1c55YZudfEG+oKJVvJLQi3zkOm5JjiUXAagWK2tI2kTGKJ2Ys7MGA=="],
+
+    "@octokit/openapi-webhooks-types": ["@octokit/openapi-webhooks-types@12.1.0", "", {}, "sha512-WiuzhOsiOvb7W3Pvmhf8d2C6qaLHXrWiLBP4nJ/4kydu+wpagV5Fkz9RfQwV2afYzv3PB+3xYgp4mAdNGjDprA=="],
+
+    "@octokit/request-error": ["@octokit/request-error@7.1.0", "", { "dependencies": { "@octokit/types": "^16.0.0" } }, "sha512-KMQIfq5sOPpkQYajXHwnhjCC0slzCNScLHs9JafXc4RAJI+9f+jNDlBNaIMTvazOPLgb4BnlhGJOTbnN0wIjPw=="],
+
+    "@octokit/types": ["@octokit/types@16.0.0", "", { "dependencies": { "@octokit/openapi-types": "^27.0.0" } }, "sha512-sKq+9r1Mm4efXW1FCk7hFSeJo4QKreL/tTbR0rz/qx/r1Oa2VV83LTA/H/MuCOX7uCIJmQVRKBcbmWoySjAnSg=="],
+
+    "@octokit/webhooks": ["@octokit/webhooks@14.2.0", "", { "dependencies": { "@octokit/openapi-webhooks-types": "12.1.0", "@octokit/request-error": "^7.0.0", "@octokit/webhooks-methods": "^6.0.0" } }, "sha512-da6KbdNCV5sr1/txD896V+6W0iamFWrvVl8cHkBSPT+YlvmT3DwXa4jxZnQc+gnuTEqSWbBeoSZYTayXH9wXcw=="],
+
+    "@octokit/webhooks-methods": ["@octokit/webhooks-methods@6.0.0", "", {}, "sha512-MFlzzoDJVw/GcbfzVC1RLR36QqkTLUf79vLVO3D+xn7r0QgxnFoLZgtrzxiQErAjFUOdH6fas2KeQJ1yr/qaXQ=="],
+
+    "@octokit/webhooks-types": ["@octokit/webhooks-types@7.6.1", "", {}, "sha512-S8u2cJzklBC0FgTwWVLaM8tMrDuDMVE4xiTK4EYXM9GntyvrdbSoxqDQa+Fh57CCNApyIpyeqPhhFEmHPfrXgw=="],
 
     "@optimize-lodash/rollup-plugin": ["@optimize-lodash/rollup-plugin@5.1.0", "", { "dependencies": { "@optimize-lodash/transform": "3.0.6", "@rollup/pluginutils": "^5.1.0" }, "peerDependencies": { "rollup": ">= 4.x" } }, "sha512-dBQYGH8+n4Z/877e61PJteVZEc+U1wfRF6IhKqW0cABRIsqMxpWynyov6M6Sd4IUjru0dnh0EG55X86JO6WakQ=="],
 
