@@ -18,8 +18,10 @@
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start",
-    "supabase:gen-types": "supabase gen types typescript --schema mastra-winston-ai --local > src/types/database.types.ts",
-    "typecheck": "tsc --noEmit"
+    "supabase:gen-types": "supabase gen types typescript --schema mastra_store --schema config --local > src/types/database.types.ts",
+    "typecheck": "tsc --noEmit",
+    "github-app:create": "bun run src/docs-bot/scripts/create-github-app.ts",
+    "ngrok:dev": "ngrok http 4111 --url=https://cheeky-credibly-kasey.ngrok-free.dev"
   },
   "dependencies": {
     "@mastra/core": "^1.1.0",
@@ -29,6 +31,9 @@
     "@mastra/memory": "^1.0.1",
     "@mastra/observability": "^1.1.0",
     "@mastra/pg": "^1.1.0",
+    "@octokit/webhooks": "^14.2.0",
+    "@octokit/webhooks-types": "^7.6.1",
+    "hono": "^4.11.7",
     "zod": "4"
   }
 }

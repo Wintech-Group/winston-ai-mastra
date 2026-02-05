@@ -1,0 +1,26 @@
+{
+  "name": "Wintech Docs Bot",
+  "url": "https://github.com/Wintech-Group/winston-ai-mastra",
+  "hook_attributes": {
+    "url": "https://REPLACE_WITH_SERVICE_URL/webhooks/github",
+    "active": true
+  },
+  "redirect_url": "https://REPLACE_WITH_SERVICE_URL/setup/callback",
+  "callback_urls": [],
+  "setup_url": "https://REPLACE_WITH_SERVICE_URL/setup",
+  "setup_on_update": true,
+  "public": false,
+  "default_permissions": {
+    "contents": "write",
+    "issues": "write",
+    "pull_requests": "write",
+    "metadata": "read"
+  },
+  "default_events": [
+    "push",
+    "pull_request",
+    "issues",
+    "issue_comment"
+  ],
+  "description": "GitHub App for managing document governance workflows. Acts as a service account to create branches, commits, pull requests, and issues on behalf of authenticated users (staff members who may not have GitHub accounts). Supports policy management, SOPs, technical documentation, and other controlled document types across multiple repositories."
+}

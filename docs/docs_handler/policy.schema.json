@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://company.com/schemas/policy.schema.json",
+  "title": "Policy Document Schema",
+  "description": "JSON Schema for policy frontmatter validation. Version 0.1.0 - intentionally minimal, will evolve with real policy conversions.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "version",
+    "status",
+    "effective_date",
+    "owners",
+    "domains",
+    "rules"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique policy identifier (e.g., IT-001, HR-003)",
+      "pattern": "^[A-Z]+-[0-9]+$",
+      "examples": ["IT-001", "HR-003", "FIN-012"]
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable policy title",
+      "minLength": 5,
+      "maxLength": 200,
+      "examples": ["Information Security Policy", "Travel and Expenses Policy"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version number",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "examples": ["1.0.0", "2.1.0"]
+    },
+    "status": {
+      "type": "string",
+      "description": "Current policy status",
+      "enum": ["draft", "active", "under_review", "archived"],
+      "default": "draft"
+    },
+    "effective_date": {
+      "type": "string",
+      "description": "Date the current version became/becomes effective (ISO 8601)",
+      "format": "date",
+      "examples": ["2025-06-01"]
+    },
+    "review_date": {
+      "type": "string",
+      "description": "Date the policy is due for review (ISO 8601)",
+      "format": "date",
+      "examples": ["2026-06-01"]
+    },
+    "owners": {
+      "type": "array",
+      "description": "Policy owners (Azure AD email addresses)",
+      "items": {
+        "type": "string",
+        "format": "email"
+      },
+      "minItems": 1,
+      "examples": [["jane.smith@company.com", "security.team@company.com"]]
+    },
+    "domains": {
+      "type": "array",
+      "description": "Domains this policy covers (for approval routing)",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "examples": [["IT", "HR"], ["Finance"]]
+    },
+    "extends": {
+      "type": ["string", "null"],
+      "description": "Parent policy ID if this policy extends another",
+      "pattern": "^[A-Z]+-[0-9]+$",
+      "default": null,
+      "examples": ["IT-001", null]
+    },
+    "related": {
+      "type": "array",
+      "description": "Related policy IDs",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z]+-[0-9]+$"
+      },
+      "default": [],
+      "examples": [["HR-003", "IT-002"]]
+    },
+    "acknowledgement_required": {
+      "type": "boolean",
+      "description": "Whether staff must acknowledge this policy",
+      "default": false
+    },
+    "rules": {
+      "type": "array",
+      "description": "Structured rules within this policy",
+      "items": {
+        "$ref": "#/$defs/rule"
+      },
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "description": "A single rule within a policy",
+      "required": [
+        "id",
+        "domain",
+        "severity",
+        "statement"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique rule identifier within the policy (e.g., IT-001-R001)",
+          "pattern": "^[A-Z]+-[0-9]+-R[0-9]+$",
+          "examples": ["IT-001-R001", "HR-003-R012"]
+        },
+        "domain": {
+          "type": "string",
+          "description": "Domain this rule belongs to (for approval routing)",
+          "examples": ["IT", "HR", "Finance", "Legal"]
+        },
+        "severity": {
+          "type": "string",
+          "description": "RFC 2119 severity level",
+          "enum": ["MUST", "MUST NOT", "SHOULD", "SHOULD NOT", "MAY"]
+        },
+        "statement": {
+          "type": "string",
+          "description": "The rule statement - should be evaluable as true/false",
+          "minLength": 10,
+          "examples": ["All company devices must have full-disk encryption enabled."]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "Why this rule exists",
+          "examples": ["Legal requirement under data protection regulations."]
+        },
+        "owner": {
+          "type": "string",
+          "description": "Rule-specific owner if different from policy owner (Azure AD email)",
+          "format": "email"
+        },
+        "exceptions": {
+          "type": "array",
+          "description": "Defined exceptions to this rule",
+          "items": {
+            "$ref": "#/$defs/exception"
+          },
+          "default": []
+        }
+      }
+    },
+    "exception": {
+      "type": "object",
+      "description": "An exception to a rule",
+      "required": [
+        "condition"
+      ],
+      "properties": {
+        "condition": {
+          "type": "string",
+          "description": "When this exception applies",
+          "examples": ["Device is used solely for public marketing content"]
+        },
+        "approver": {
+          "type": "string",
+          "description": "Role or person who can approve this exception",
+          "examples": ["IT Security Manager", "Department Head"]
+        },
+        "expiry": {
+          "type": "string",
+          "description": "If the exception has a time limit (ISO 8601 date)",
+          "format": "date"
+        }
+      }
+    }
+  }
+}

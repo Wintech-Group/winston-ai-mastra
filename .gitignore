@@ -41,3 +41,8 @@ dist
 .env 
 *.db 
 *.db-* 
+
+# GitHub App private keys
+*.pem
+*-private-key.pem
+dev-private-key.pem
