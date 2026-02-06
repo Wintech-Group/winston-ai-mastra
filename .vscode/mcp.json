@@ -1,13 +1,14 @@
 {
-	"servers": {
-		"mastra-docs": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"@mastra/mcp-docs-server",
-				"-y"
-			]
-		}
-	},
-	"inputs": []
+  "servers": {
+    "mastra-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@mastra/mcp-docs-server", "-y"]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "http://localhost:54321/mcp"
+    }
+  },
+  "inputs": []
 }

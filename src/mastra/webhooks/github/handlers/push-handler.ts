@@ -1,6 +1,7 @@
 // Push handler for GitHub webhooks
 
 import type { EmitterWebhookEvent } from "@octokit/webhooks"
+import { loadOrSyncConfig } from "../../../../services/config-service"
 
 type PushEvent = EmitterWebhookEvent<"push">
 type PushPayload = PushEvent["payload"]
@@ -17,35 +18,42 @@ type ActionableDocs = {
 }
 
 export async function handlePushEvent({ id, payload }: PushEvent) {
-  console.log(
-    `[${id}] Processing push to ${payload.repository.full_name} (${payload.ref})`,
-  )
+  const repoFullName = payload.repository.full_name
+  const ref = payload.ref.replace("refs/heads/", "")
 
-  // Extract actionable docs from the push event payload
-  const docs = getDocsFromPayload({
-    payload,
-    documentPath: "policies/",
-    fileExtension: ".md",
-  })
+  console.log(`[${id}] Processing push to ${repoFullName} (${ref})`)
 
-  const config = getDocsFromPayload({
+  // Extract config files from the push event payload first
+  const configChanges = getDocsFromPayload({
     payload,
     documentPath: "metadata/",
     fileExtension: ".yaml",
   })
 
-  // Process configuration changes
-  if (config.update.length > 0) {
-    console.log(`[${id}] Config files to update: ${config.update.length}`)
-    for (const cfg of config.update) {
-      console.log(`[${id}] - ${cfg}`)
-      // TODO: Update repository-specific configuration
-    }
-  }
+  // Load or sync repository configuration
+  // If governance.yaml changed, this will fetch, validate, and sync to DB
+  const repoConfig = await loadOrSyncConfig({
+    repoFullName,
+    configFiles: configChanges.update,
+    ref,
+  })
+
+  console.log(
+    `[${id}] Using config: documentPath=${repoConfig.documentPath}, type=${repoConfig.documentType}`,
+  )
+
+  // Extract actionable docs using config-defined document path
+  const docs = getDocsFromPayload({
+    payload,
+    documentPath: repoConfig.documentPath,
+    fileExtension: ".md",
+  })
 
   // Process document updates
   if (docs.update.length > 0) {
-    console.log(`[${id}] Policy docs to update: ${docs.update.length}`)
+    console.log(
+      `[${id}] ${repoConfig.documentType} docs to update: ${docs.update.length}`,
+    )
     for (const doc of docs.update) {
       console.log(`[${id}] - ${doc}`)
       // TODO: Sync with SharePoint, upload PDFs, update vectors, etc.
@@ -54,7 +62,9 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
 
   // Process document removals
   if (docs.remove.length > 0) {
-    console.log(`[${id}] Policy docs to remove: ${docs.remove.length}`)
+    console.log(
+      `[${id}] ${repoConfig.documentType} docs to remove: ${docs.remove.length}`,
+    )
     for (const doc of docs.remove) {
       console.log(`[${id}] - ${doc}`)
       // TODO: Remove page from SharePoint, archive PDF, update vectors, etc.
@@ -62,6 +72,9 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
   }
 
   console.log(`[${id}] Push event processing complete`)
+
+  // Return config for potential downstream use
+  return { repoConfig, docs, configChanges }
 }
 
 export function getDocsFromPayload({
@@ -92,24 +105,5 @@ export function getDocsFromPayload({
   return {
     update: [...new Set(docsToUpdate)],
     remove: [...new Set(docsToRemove)],
-  }
-}
-
-/**
- * Fetches repository-specific configuration
- * TODO: Implement actual configuration fetching from database or config file
- */
-export async function getRepoConfig(repoFullName: string) {
-  // Placeholder for fetching repository-specific configuration
-  // In a real implementation, this might fetch from a database or config file
-  return {
-    repoFullName,
-    sharePointSite:
-      process.env.SHAREPOINT_SITE_URL ||
-      "https://contoso.sharepoint.com/sites/policies",
-    pdfGeneration: {
-      enabled: true,
-      outputPath: "pdfs/",
-    },
   }
 }

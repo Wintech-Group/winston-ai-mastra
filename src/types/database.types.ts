@@ -143,6 +143,7 @@ export type Database = {
           config_file_path: string
           config_sha: string | null
           created_at: string
+          document_path: string
           document_type: string
           domain_approval: boolean
           escalate_after_hours: number | null
@@ -161,6 +162,7 @@ export type Database = {
           config_file_path?: string
           config_sha?: string | null
           created_at?: string
+          document_path: string
           document_type: string
           domain_approval?: boolean
           escalate_after_hours?: number | null
@@ -179,6 +181,7 @@ export type Database = {
           config_file_path?: string
           config_sha?: string | null
           created_at?: string
+          document_path?: string
           document_type?: string
           domain_approval?: boolean
           escalate_after_hours?: number | null

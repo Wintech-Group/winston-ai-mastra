@@ -59,21 +59,15 @@ function loadGitHubConfig(): GitHubAppConfig {
 export async function createGitHubClient(): Promise<Octokit> {
   const config = loadGitHubConfig()
 
-  // Create the GitHub App instance
+  // Create the GitHub App instance with REST API support
   const app = new App({
     appId: config.appId,
     privateKey: config.privateKey,
+    Octokit: Octokit,
   })
 
-  // Get an installation access token
-  const installationAccessToken = await app.getInstallationAccessToken({
-    installationId: parseInt(config.installationId, 10),
-  })
-
-  // Create an authenticated Octokit client
-  return new Octokit({
-    auth: installationAccessToken,
-  })
+  // Get an installation-authenticated Octokit instance
+  return await app.getInstallationOctokit(parseInt(config.installationId, 10))
 }
 
 /**
