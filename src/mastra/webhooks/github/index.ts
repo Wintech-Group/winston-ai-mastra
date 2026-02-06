@@ -1,14 +1,23 @@
 import { registerApiRoute } from "@mastra/core/server"
 import {
-  webhooks,
   verifyGitHubWebhook,
+  webhooks,
 } from "../../middleware/verify-github-webhook"
-import type { EmitterWebhookEvent } from "@octokit/webhooks"
+import { type EmitterWebhookEvent } from "@octokit/webhooks"
+import { handlePushEvent } from "./handlers/push-handler"
 
 // Register event handlers with full type safety
-webhooks.on("push", async ({ id, payload }) => {
+webhooks.on("push", async (event) => {
+  const { id, payload } = event
   console.log(`[${id}] Push to ${payload.repository.full_name}`)
   // Your push handler: sync to SharePoint, generate PDF, update index
+
+  try {
+    await handlePushEvent(event)
+  } catch (error) {
+    console.error(`[${id}] Failed to handle push event:`, error)
+    throw error
+  }
 })
 
 webhooks.on("pull_request.opened", async ({ id, payload }) => {
@@ -41,16 +50,16 @@ export const githubWebhookRoute = registerApiRoute("/webhooks/github", {
   middleware: [verifyGitHubWebhook],
   handler: async (c) => {
     const payload = c.get("webhookPayload")
-    const event = c.get("webhookEvent")
+    const name = c.get("webhookEvent")
     const id = c.get("webhookDeliveryId")
 
-    console.log(`Received GitHub event: ${event} (Delivery ID: ${id})`)
+    console.log(`Received GitHub event: ${name} (Delivery ID: ${id})`)
 
     // Dispatch to registered handlers
     // Type assertion needed: name↔payload correlation is proven at runtime by GitHub
     await webhooks.receive({
       id,
-      name: event,
+      name,
       payload,
     } as EmitterWebhookEvent)
 
