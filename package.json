@@ -31,6 +31,7 @@
     "@mastra/memory": "^1.0.1",
     "@mastra/observability": "^1.1.0",
     "@mastra/pg": "^1.1.0",
+    "@octokit/rest": "^22.0.1",
     "@octokit/webhooks": "^14.2.0",
     "@octokit/webhooks-types": "^7.6.1",
     "hono": "^4.11.7",
