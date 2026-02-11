@@ -51,6 +51,9 @@ export {
   htmlToPdf,
   htmlToPdfmakeContent,
   markdownToPdf,
+  resolveLogoPath,
+  type HeaderFooterDef,
+  type HeaderFooterSection,
   type PdfOptions,
   type PdfResult,
 } from "./pdf"

@@ -4,9 +4,46 @@
 
 import type { Content, TDocumentDefinitions } from "pdfmake/interfaces"
 
+/**
+ * Content for a single section (left, center, or right) of a header/footer.
+ *
+ * Each section can contain text, an image, or both. When both are provided,
+ * the image is rendered above the text.
+ *
+ * Text supports `{currentPage}` and `{totalPages}` placeholders.
+ */
+export interface HeaderFooterSection {
+  /** Text content. Supports {currentPage} and {totalPages} placeholders. */
+  text?: string | string[]
+  /** Absolute path to an image file (SVG or raster) */
+  image?: string
+  /** Image width in points */
+  imageWidth?: number
+  /** Image height in points */
+  imageHeight?: number
+  /** Font size for text in this section (default: 8) */
+  fontSize?: number
+  /** Text color (default: "#1B1F1B") */
+  color?: string
+}
+
+/**
+ * Header or footer definition with left / center / right sections,
+ * mirroring the MS Word header/footer model.
+ */
+export interface HeaderFooterDef {
+  left?: HeaderFooterSection
+  center?: HeaderFooterSection
+  right?: HeaderFooterSection
+  /** Left and right margins for this band [left, right] in points */
+  margins?: [number, number]
+  /** Vertical alignment of each column's content relative to the tallest column (default: "top") */
+  verticalAlign?: "top" | "center" | "bottom"
+}
+
 /** Configuration for PDF document generation */
 export interface PdfOptions {
-  /** Document title (appears in header if enabled) */
+  /** Document title (used as metadata, not rendered directly) */
   title?: string
 
   /** Page size - defaults to A4 */
@@ -15,32 +52,22 @@ export interface PdfOptions {
   /** Page orientation */
   pageOrientation?: "portrait" | "landscape"
 
-  /** Enable header with document title */
-  showHeader?: boolean
+  /** Header definition (omit to disable header) */
+  header?: HeaderFooterDef
 
-  /** Enable footer with page numbers */
-  showFooter?: boolean
-
-  /** Custom header text (overrides title) */
-  headerText?: string
-
-  /** Footer format - use {currentPage} and {totalPages} as placeholders */
-  footerFormat?: string
+  /** Footer definition (omit to disable footer) */
+  footer?: HeaderFooterDef
 
   /** Page margins [left, top, right, bottom] in points */
   margins?: [number, number, number, number]
 }
 
-/** Default PDF options */
-export const DEFAULT_PDF_OPTIONS: Required<PdfOptions> = {
+/** Default PDF options — margins match Wintech Word template */
+export const DEFAULT_PDF_OPTIONS: PdfOptions = {
   title: "",
   pageSize: "A4",
   pageOrientation: "portrait",
-  showHeader: true,
-  showFooter: true,
-  headerText: "",
-  footerFormat: "Page {currentPage} of {totalPages}",
-  margins: [40, 60, 40, 60], // Extra top/bottom for header/footer
+  margins: [72, 99, 57, 72], // left, top, right, bottom (from Word template)
 }
 
 /** Result of PDF generation */

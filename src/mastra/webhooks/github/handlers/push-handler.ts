@@ -9,6 +9,7 @@ import {
   ensureDocumentLibrary,
   getSiteId,
   markdownToPdf,
+  resolveLogoPath,
   uploadFileToLibrary,
   type ImageFetcher,
 } from "../../../../services/sharepoint"
@@ -89,7 +90,33 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
           console.log(`[${id}]   Generating PDF...`)
           const pdfResult = await markdownToPdf(body, {
             title,
-            showFooter: true,
+            header: {
+              left: {
+                image: resolveLogoPath("Wintech_Logo_Forest_RGB.svg"),
+                imageWidth: 110,
+                imageHeight: 24,
+              },
+              right: {
+                text: [
+                  "HR033 Rev 4",
+                  "14/01/2026",
+                  "{currentPage} of {totalPages}",
+                ],
+                fontSize: 8,
+              },
+            },
+            footer: {
+              verticalAlign: "center",
+              left: {
+                image: resolveLogoPath("BSI LOGO 9001 14001.png"),
+                imageWidth: 102,
+                imageHeight: 38,
+              },
+              right: {
+                text: title,
+                fontSize: 9,
+              },
+            },
           })
           const pdfFileName = `${title.replace(/[^a-zA-Z0-9-_ ]/g, "").replace(/\s+/g, "-")}.pdf`
 

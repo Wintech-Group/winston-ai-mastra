@@ -10,9 +10,14 @@ import { htmlToPdfmakeContent } from "./html-to-pdfmake"
 import type { PdfOptions, PdfResult } from "./types"
 
 // Re-export types and utilities
-export { generatePdf } from "./generator"
+export { generatePdf, resolveLogoPath } from "./generator"
 export { htmlToPdfmakeContent } from "./html-to-pdfmake"
-export type { PdfOptions, PdfResult } from "./types"
+export type {
+  HeaderFooterDef,
+  HeaderFooterSection,
+  PdfOptions,
+  PdfResult,
+} from "./types"
 
 /**
  * Convert markdown content directly to PDF
