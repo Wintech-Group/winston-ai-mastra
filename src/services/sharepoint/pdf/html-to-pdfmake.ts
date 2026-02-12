@@ -228,6 +228,18 @@ function isUnbreakableNode(node: unknown): boolean {
   return rec.unbreakable === true && Array.isArray(rec.stack)
 }
 
+/** Check whether a node or any of its children contain an image */
+function containsImage(node: unknown): boolean {
+  if (!node || typeof node !== "object") return false
+  const rec = node as Record<string, unknown>
+  if ("image" in rec) return true
+  for (const value of Object.values(rec)) {
+    if (Array.isArray(value) && value.some(containsImage)) return true
+    if (value && typeof value === "object" && containsImage(value)) return true
+  }
+  return false
+}
+
 /**
  * Merge heading sequences + unbreakable pairs so they stay on the same page.
  * When one or more headings immediately precede an unbreakable stack (table,
@@ -314,9 +326,8 @@ function cleanPdfContent(content: unknown, insideList = false): unknown {
     const isTable = "table" in result
     // Check if this node is an image
     const isImage = "image" in result
-    // Check if this node is a paragraph
+    // Check if this node is a paragraph (text-based or containing images/other block content)
     const isParagraph =
-      "text" in result &&
       !isHeadingNode(result) &&
       (result.nodeName === "P" ||
         result.style === "html-p" ||
@@ -351,11 +362,16 @@ function cleanPdfContent(content: unknown, insideList = false): unknown {
 
     // Wrap images in an unbreakable stack so they stay with a preceding heading
     if (isImage) {
+      result.alignment = "center"
       return { stack: [result], unbreakable: true }
     }
 
-    // Wrap paragraphs in an unbreakable stack so they stay with a preceding heading
+    // Wrap paragraphs in an unbreakable stack so they stay with a preceding heading.
+    // If the paragraph contains an image, center it.
     if (isParagraph) {
+      if (containsImage(result)) {
+        result.alignment = "center"
+      }
       return { stack: [result], unbreakable: true }
     }
 
