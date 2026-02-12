@@ -37,4 +37,5 @@ export {
   uploadFile,
   uploadFileToLibrary,
   uploadImageWithDedup,
+  type LibraryTarget,
 } from "./files"

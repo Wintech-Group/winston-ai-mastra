@@ -7,7 +7,7 @@
  */
 
 import { extname } from "path"
-import { uploadImageWithDedup } from "../graph"
+import { uploadImageWithDedup, type LibraryTarget } from "../graph"
 
 /** Callback to fetch image data by relative path. Returns null if not found. */
 export type ImageFetcher = (path: string) => Promise<Buffer | null>
@@ -25,6 +25,7 @@ export async function processMarkdownImages(
   siteId: string,
   markdown: string,
   fetchImage: ImageFetcher,
+  library: LibraryTarget,
 ): Promise<string> {
   let modifiedMarkdown = markdown
 
@@ -60,7 +61,7 @@ export async function processMarkdownImages(
     const extension = extname(imagePath).slice(1) // Remove leading dot
 
     // Upload with deduplication
-    const result = await uploadImageWithDedup(siteId, imageBuffer, extension)
+    const result = await uploadImageWithDedup(siteId, imageBuffer, extension, library)
 
     // Cache the result for future references to the same path
     processedImages.set(imagePath, result.url)

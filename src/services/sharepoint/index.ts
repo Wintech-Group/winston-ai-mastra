@@ -24,6 +24,7 @@ export {
   ensureDocumentLibrary,
   uploadImageWithDedup,
   type DriveItem,
+  type LibraryTarget,
   type GraphRequestOptions,
   type ImageUploadResult,
   type Site,

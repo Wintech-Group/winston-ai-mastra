@@ -18,6 +18,7 @@ import {
   resolveLogoPath,
   uploadFileToLibrary,
   type ImageFetcher,
+  type LibraryTarget,
 } from "../../../../services/sharepoint"
 
 type PushEvent = EmitterWebhookEvent<"push">
@@ -105,8 +106,9 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
         if (repoConfig.sharepointSync.enabled) {
           const { siteUrl, libraryName } = repoConfig.sharepointSync
 
-          // 3a. Resolve site ID first (needed for image processing and library operations)
+          // 3a. Resolve site ID and library target (needed for image processing and library operations)
           const siteId = await getSiteId(siteUrl)
+          const libTarget = await ensureDocumentLibrary(siteId, libraryName)
 
           // 3b. Build image fetcher that retrieves images from the GitHub repo
           const docDir = docPath.substring(0, docPath.lastIndexOf("/") + 1)
@@ -140,6 +142,7 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
             siteId,
             body,
             fetchImage,
+            libTarget,
           )
 
           // 3d. Build PDF-specific markdown with base64 data URLs
@@ -192,8 +195,7 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
           })
           const pdfFileName = `${title.replace(/[^a-zA-Z0-9-_ ]/g, "").replace(/\s+/g, "-")}.pdf`
 
-          // 3f. Ensure document library and upload PDF
-          const libTarget = await ensureDocumentLibrary(siteId, libraryName)
+          // 3f. Upload PDF to document library
           console.log(`[${id}]   Uploading PDF: ${pdfFileName}`)
           const pdfUrl = await uploadFileToLibrary(
             siteId,

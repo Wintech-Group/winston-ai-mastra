@@ -6,10 +6,12 @@
 
 import {
   createPage,
+  ensureDocumentLibrary,
   getSiteId,
   listPages,
   publishPage,
   updatePage,
+  type LibraryTarget,
 } from "../graph"
 import type { ImageFetcher } from "./images"
 import { processMarkdownImages } from "./images"
@@ -149,12 +151,14 @@ export interface PageResult {
  * @param title - Page title
  * @param markdownContent - Raw markdown content
  * @param fetchImage - Optional callback to fetch image data by relative path
+ * @param library - Optional pre-resolved library target for image uploads
  */
 export async function createOrUpdatePage(
   siteUrl: string,
   title: string,
   markdownContent: string,
   fetchImage?: ImageFetcher,
+  library?: LibraryTarget,
 ): Promise<PageResult> {
   // Get site ID from URL
   console.log(`Resolving site: ${siteUrl}`)
@@ -164,10 +168,13 @@ export async function createOrUpdatePage(
   // Process images: upload to SharePoint and replace paths
   let processedMarkdown = markdownContent
   if (fetchImage) {
+    // Resolve library target if not provided
+    const imageLibrary = library ?? await ensureDocumentLibrary(siteId, "Documents")
     processedMarkdown = await processMarkdownImages(
       siteId,
       markdownContent,
       fetchImage,
+      imageLibrary,
     )
   }
 

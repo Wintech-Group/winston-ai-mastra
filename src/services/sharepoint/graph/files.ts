@@ -8,17 +8,20 @@ import { GRAPH_BASE_URL, graphFetch } from "./client"
 import type { DriveItem, ImageUploadResult } from "./types"
 
 /**
- * Get a file by its path in the site drive
+ * Get a file by its path in a specific drive
  * @returns null if file doesn't exist (404)
  */
 export async function getFileByPath(
   siteId: string,
   relativePath: string,
+  driveId?: string,
 ): Promise<DriveItem | null> {
   try {
-    return await graphFetch<DriveItem>(
-      `/sites/${siteId}/drive/root:/${relativePath}?$select=id,name,webUrl,file`,
-    )
+    const endpoint =
+      driveId ?
+        `/sites/${siteId}/drives/${driveId}/root:/${relativePath}?$select=id,name,webUrl,file`
+      : `/sites/${siteId}/drive/root:/${relativePath}?$select=id,name,webUrl,file`
+    return await graphFetch<DriveItem>(endpoint)
   } catch (error: unknown) {
     // Return null if file doesn't exist
     if (error instanceof Error && error.message.includes("404")) {
@@ -72,31 +75,46 @@ export async function uploadFile(
 /**
  * Upload an image with hash-based deduplication
  * Uses content-addressable storage: filename = {hash}.{extension}
+ * Uploads to an "Images" subfolder within the given library target.
  * @returns The SharePoint URL (existing or newly uploaded) and action taken
  */
 export async function uploadImageWithDedup(
   siteId: string,
   imageBuffer: Buffer,
   extension: string,
+  library: LibraryTarget,
 ): Promise<ImageUploadResult> {
   // Compute hash and create filename
   const hash = computeQuickXorHash(imageBuffer)
   const fileName = `${hash}.${extension}`
-  const filePath = `SiteAssets/${fileName}`
+
+  // Build the Images subfolder path within the library target
+  const imageFolder =
+    library.folderPath ? `${library.folderPath}/Images` : "Images"
 
   console.log(`  Checking for existing image: ${fileName}`)
 
   // Check if file already exists
-  const existing = await getFileByPath(siteId, filePath)
+  const existing = await getFileByPath(
+    siteId,
+    `${imageFolder}/${fileName}`,
+    library.driveId,
+  )
 
   if (existing) {
     console.log(`  Image already exists, reusing URL`)
     return { url: existing.webUrl, action: "existing" }
   }
 
-  // Upload new file
+  // Upload new file to Images subfolder
   console.log(`  Uploading new image...`)
-  const url = await uploadFile(siteId, "SiteAssets", fileName, imageBuffer)
+  const url = await uploadFileToLibrary(
+    siteId,
+    library.driveId,
+    fileName,
+    imageBuffer,
+    imageFolder,
+  )
   console.log(`  Uploaded successfully`)
   return { url, action: "uploaded" }
 }
@@ -124,8 +142,9 @@ export async function ensureDocumentLibrary(
     value: { id: string; name: string }[]
   }>(`/sites/${siteId}/drives`)
 
+  const normalize = (s: string) => s.toLowerCase().replace(/[\s_-]/g, "")
   const existingDrive = drivesResponse.value.find(
-    (d) => d.name.toLowerCase() === libraryName.toLowerCase(),
+    (d) => normalize(d.name) === normalize(libraryName),
   )
 
   if (existingDrive) {
