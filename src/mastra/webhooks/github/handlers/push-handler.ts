@@ -1,9 +1,10 @@
 // Push handler for GitHub webhooks
 
 import type { EmitterWebhookEvent } from "@octokit/webhooks"
-import { parse as parseYaml } from "yaml"
+import { parseFrontmatter } from "@wintech-group/documentation-types"
 import { loadOrSyncConfig } from "../../../../services/config-service"
 import { fetchFileContent } from "../../../../services/github-client"
+import { formatDateToISO } from "../../../../utils/date"
 import {
   createOrUpdatePage,
   ensureDocumentLibrary,
@@ -79,8 +80,21 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
           continue
         }
 
-        // 2. Parse frontmatter and extract title + body
-        const { title, body } = parseFrontmatter(fileResult.content, docPath)
+        // 2. Parse frontmatter and extract metadata
+        const frontMatter = parseFrontmatter(fileResult.content, "policy")
+
+        if (!frontMatter.success) {
+          throw new Error(
+            `Invalid frontmatter in ${docPath}: ${JSON.stringify(frontMatter.error)}`,
+          )
+        }
+
+        const {
+          body,
+          data: { title, version, effective_date, id: docId },
+        } = frontMatter
+
+        const formattedEffectiveDate = formatDateToISO(effective_date)
 
         // 3. SharePoint sync (if enabled)
         if (repoConfig.sharepointSync.enabled) {
@@ -98,8 +112,8 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
               },
               right: {
                 text: [
-                  "HR033 Rev 4",
-                  "14/01/2026",
+                  `${docId} ${version}`,
+                  formattedEffectiveDate,
                   "{currentPage} of {totalPages}",
                 ],
                 fontSize: 8,
@@ -211,42 +225,4 @@ export function getDocsFromPayload({
     update: [...new Set(docsToUpdate)],
     remove: [...new Set(docsToRemove)],
   }
-}
-
-/**
- * Parse YAML frontmatter from a markdown document.
- * Returns the title (from frontmatter or derived from filename) and the body without frontmatter.
- */
-function parseFrontmatter(
-  content: string,
-  filePath: string,
-): { title: string; body: string } {
-  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
-  const match = content.match(frontmatterRegex)
-
-  if (match) {
-    const yamlStr = match[1]!
-    const body = match[2]!
-    try {
-      const meta = parseYaml(yamlStr) as Record<string, unknown>
-      const title =
-        typeof meta.title === "string" && meta.title ?
-          meta.title
-        : titleFromPath(filePath)
-      return { title, body }
-    } catch {
-      // YAML parse failed — treat entire content as body
-    }
-  }
-
-  return { title: titleFromPath(filePath), body: content }
-}
-
-/** Derive a human-readable title from a file path like "policies/my-cool-policy.md" */
-function titleFromPath(filePath: string): string {
-  const fileName = filePath.split("/").pop() ?? filePath
-  return fileName
-    .replace(/\.md$/i, "")
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase())
 }
