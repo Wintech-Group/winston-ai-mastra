@@ -3,13 +3,18 @@
 import type { EmitterWebhookEvent } from "@octokit/webhooks"
 import { parseFrontmatter } from "@wintech-group/documentation-types"
 import { loadOrSyncConfig } from "../../../../services/config-service"
-import { fetchFileContent } from "../../../../services/github-client"
+import {
+  fetchBinaryContent,
+  fetchFileContent,
+} from "../../../../services/github-client"
+import { extname } from "path"
 import { formatDateToISO } from "../../../../utils/date"
 import {
   createOrUpdatePage,
   ensureDocumentLibrary,
   getSiteId,
   markdownToPdf,
+  processMarkdownImages,
   resolveLogoPath,
   uploadFileToLibrary,
   type ImageFetcher,
@@ -100,9 +105,62 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
         if (repoConfig.sharepointSync.enabled) {
           const { siteUrl, libraryName } = repoConfig.sharepointSync
 
-          // 3a. Generate PDF from markdown
+          // 3a. Resolve site ID first (needed for image processing and library operations)
+          const siteId = await getSiteId(siteUrl)
+
+          // 3b. Build image fetcher that retrieves images from the GitHub repo
+          const docDir = docPath.substring(0, docPath.lastIndexOf("/") + 1)
+          const imageBufferMap = new Map<string, Buffer>()
+          const fetchImage: ImageFetcher = async (imagePath: string) => {
+            // Normalize path separators (handle both forward and back slashes)
+            const normalizedPath = imagePath.replace(/\\/g, "/")
+
+            // Handle root-relative paths (starting with /) vs document-relative paths
+            const fullPath =
+              normalizedPath.startsWith("/") ?
+                normalizedPath.slice(1) // Root-relative: strip leading slash
+              : docDir + normalizedPath // Document-relative: combine with doc directory
+
+            const imgResult = await fetchBinaryContent(
+              owner,
+              repo,
+              fullPath,
+              ref,
+            )
+            if (!imgResult) return null
+
+            // Store buffer for PDF data URL generation
+            imageBufferMap.set(imagePath, imgResult.content)
+            return imgResult.content
+          }
+
+          // 3c. Process images: upload to SharePoint and replace paths in markdown
+          console.log(`[${id}]   Processing images...`)
+          const processedBody = await processMarkdownImages(
+            siteId,
+            body,
+            fetchImage,
+          )
+
+          // 3d. Build PDF-specific markdown with base64 data URLs
+          //     pdfmake cannot resolve HTTP URLs — it needs data URLs or local paths
+          let pdfBody = body
+          for (const [imagePath, buffer] of imageBufferMap) {
+            const ext = extname(imagePath).slice(1).toLowerCase()
+            const mime =
+              ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+              : ext === "png" ? "image/png"
+              : ext === "gif" ? "image/gif"
+              : ext === "svg" ? "image/svg+xml"
+              : ext === "webp" ? "image/webp"
+              : "application/octet-stream"
+            const dataUrl = `data:${mime};base64,${buffer.toString("base64")}`
+            pdfBody = pdfBody.replaceAll(imagePath, dataUrl)
+          }
+
+          // 3e. Generate PDF from markdown with embedded data URLs
           console.log(`[${id}]   Generating PDF...`)
-          const pdfResult = await markdownToPdf(body, {
+          const pdfResult = await markdownToPdf(pdfBody, {
             title,
             header: {
               left: {
@@ -134,11 +192,8 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
           })
           const pdfFileName = `${title.replace(/[^a-zA-Z0-9-_ ]/g, "").replace(/\s+/g, "-")}.pdf`
 
-          // 3b. Resolve site and ensure document library
-          const siteId = await getSiteId(siteUrl)
+          // 3f. Ensure document library and upload PDF
           const libTarget = await ensureDocumentLibrary(siteId, libraryName)
-
-          // 3c. Upload PDF
           console.log(`[${id}]   Uploading PDF: ${pdfFileName}`)
           const pdfUrl = await uploadFileToLibrary(
             siteId,
@@ -149,22 +204,13 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
           )
           console.log(`[${id}]   PDF uploaded: ${pdfUrl}`)
 
-          // 3d. Build image fetcher that retrieves images from the GitHub repo
-          const docDir = docPath.substring(0, docPath.lastIndexOf("/") + 1)
-          const fetchImage: ImageFetcher = async (imagePath: string) => {
-            const fullPath = docDir + imagePath
-            const imgResult = await fetchFileContent(owner, repo, fullPath, ref)
-            if (!imgResult) return null
-            return Buffer.from(imgResult.content, "base64")
-          }
-
-          // 3e. Create or update SharePoint page
+          // 3g. Create or update SharePoint page (using processed markdown)
           console.log(`[${id}]   Syncing SharePoint page: ${title}`)
           const pageResult = await createOrUpdatePage(
             siteUrl,
             title,
-            body,
-            fetchImage,
+            processedBody,
+            // No need to pass fetchImage again - images are already processed
           )
           console.log(`[${id}]   Page ${pageResult.action}: ${pageResult.url}`)
         }
