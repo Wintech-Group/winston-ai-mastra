@@ -67,35 +67,70 @@ export function htmlToPdfmakeContent(html: string): Content[] {
     window,
     // Default styles for elements
     defaultStyles: {
-      h1: { fontSize: 24, bold: true, marginBottom: 10 },
-      h2: { fontSize: 20, bold: true, marginBottom: 8 },
-      h3: { fontSize: 16, bold: true, marginBottom: 6 },
-      h4: { fontSize: 14, bold: true, marginBottom: 4 },
-      h5: { fontSize: 12, bold: true, marginBottom: 4 },
-      h6: { fontSize: 11, bold: true, marginBottom: 4 },
-      p: { marginBottom: 8 },
-      ul: { marginBottom: 4, marginTop: 0 },
-      ol: { marginBottom: 4, marginTop: 0 },
-      li: { marginBottom: 2 },
+      h1: { fontSize: 16, bold: true, marginBottom: 10, color: "#253E34" },
+      h2: {
+        fontSize: 12,
+        bold: true,
+        marginBottom: 8,
+        marginTop: 6,
+        color: "#50645c",
+      },
+      h3: {
+        fontSize: 10,
+        bold: true,
+        marginBottom: 6,
+        marginTop: 4,
+        color: "#1b1f1b",
+      },
+      h4: {
+        fontSize: 10,
+        bold: true,
+        marginBottom: 4,
+        marginTop: 2,
+        color: "#1b1f1b",
+      },
+      h5: {
+        fontSize: 9,
+        bold: true,
+        marginBottom: 4,
+        marginTop: 2,
+        color: "#1b1f1b",
+      },
+      h6: {
+        fontSize: 8,
+        bold: true,
+        marginBottom: 4,
+        marginTop: 2,
+        color: "#1b1f1b",
+      },
+      p: { marginBottom: 8, color: "#1b1f1b" },
+      ul: { marginBottom: 4, marginTop: 0, color: "#1b1f1b" },
+      ol: { marginBottom: 4, marginTop: 0, color: "#1b1f1b" },
+      li: { marginBottom: 2, color: "#1b1f1b" },
       pre: {
         font: "Courier",
         fontSize: 9,
-        background: "#f5f5f5",
+        background: "#e3e8e7",
         margin: [0, 8, 0, 8],
       },
       code: {
         font: "Courier",
         fontSize: 9,
-        background: "#f0f0f0",
+        background: "#e3e8e7",
       },
       blockquote: {
         marginLeft: 20,
         italics: true,
-        color: "#666666",
+        color: "#c7d1cf",
       },
       a: {
-        color: "#0066cc",
+        color: "#3C69E6",
         decoration: "underline",
+      },
+      table: { marginBottom: 4, marginTop: 4 },
+      th: {
+        bold: true,
+        color: "#1b1f1b",
       },
     },
   })
@@ -112,13 +147,145 @@ export function htmlToPdfmakeContent(html: string): Content[] {
 }
 
 /**
+ * Custom table layout providing Wintech-branded styling:
+ * - Thin gray borders
+ * - Light green-gray header background
+ * - Comfortable cell padding
+ */
+const wintechTableLayout = {
+  hLineWidth: (i: number, node: { table: { body: unknown[][] } }) =>
+    i === 0 || i === node.table.body.length ? 0.8 : 0.5,
+  vLineWidth: () => 0.5,
+  hLineColor: () => "#c7d1cf",
+  vLineColor: () => "#c7d1cf",
+  fillColor: (i: number) => {
+    if (i === 0) return "#dde3e2" // header row
+    return null
+  },
+  paddingLeft: () => 6,
+  paddingRight: () => 6,
+  paddingTop: () => 4,
+  paddingBottom: () => 4,
+}
+
+/**
+ * Apply table styles and page-break settings to a pdfmake table node.
+ *
+ * - Sets `dontBreakRows` so individual rows never split across pages
+ * - Sets `headerRows` so the first row repeats on every page for long tables
+ * - Applies the Wintech branded table layout
+ */
+function styleTableNode(node: Record<string, unknown>): void {
+  const table = node.table as Record<string, unknown> | undefined
+  if (!table) return
+
+  // Page-break control
+  table.dontBreakRows = true
+  table.headerRows = 1
+
+  // Apply custom layout
+  node.layout = wintechTableLayout
+
+  // html-to-pdfmake sets fillColor directly on <th> cells which overrides
+  // the layout's fillColor callback. Strip fillColor from every cell so the
+  // layout is the sole authority for background colors.
+  const body = table.body as unknown[][] | undefined
+  if (body) {
+    for (const row of body) {
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c]
+        if (cell && typeof cell === "object" && !Array.isArray(cell)) {
+          const rec = cell as Record<string, unknown>
+          delete rec.fillColor
+        }
+      }
+    }
+  }
+}
+
+/** Check whether a node is a heading (H1–H6) produced by html-to-pdfmake */
+function isHeadingNode(node: unknown): boolean {
+  if (!node || typeof node !== "object") return false
+  const rec = node as Record<string, unknown>
+  // html-to-pdfmake sets nodeName on converted elements
+  if (typeof rec.nodeName === "string" && /^H[1-6]$/i.test(rec.nodeName))
+    return true
+  // Also check style array/string for html-h* patterns
+  const style = rec.style
+  if (typeof style === "string" && /^html-h[1-6]$/.test(style)) return true
+  if (
+    Array.isArray(style) &&
+    style.some((s: unknown) => typeof s === "string" && /^html-h[1-6]$/.test(s))
+  )
+    return true
+  return false
+}
+
+/** Check whether a node is an unbreakable wrapper (e.g. a table we wrapped) */
+function isUnbreakableNode(node: unknown): boolean {
+  if (!node || typeof node !== "object") return false
+  const rec = node as Record<string, unknown>
+  return rec.unbreakable === true && Array.isArray(rec.stack)
+}
+
+/**
+ * Merge heading sequences + unbreakable pairs so they stay on the same page.
+ * When one or more headings immediately precede an unbreakable stack (table,
+ * list, image, or paragraph), all headings are prepended into that stack —
+ * keeping the entire group together.
+ *
+ * Example: H2 → H3 → Image becomes {stack: [H2, H3, Image], unbreakable: true}
+ */
+function mergeHeadingsWithUnbreakables(items: unknown[]): unknown[] {
+  const merged: unknown[] = []
+  let i = 0
+
+  while (i < items.length) {
+    const current = items[i]
+
+    // If this is a heading, look ahead to collect all consecutive headings
+    if (isHeadingNode(current)) {
+      const headings: unknown[] = [current]
+      let j = i + 1
+
+      // Collect consecutive headings
+      while (j < items.length && isHeadingNode(items[j])) {
+        headings.push(items[j])
+        j++
+      }
+
+      // Check if the sequence ends with an unbreakable node
+      const followingNode = items[j]
+      if (followingNode && isUnbreakableNode(followingNode)) {
+        // Merge all collected headings + the unbreakable into one stack
+        const wrapper = { ...(followingNode as Record<string, unknown>) }
+        wrapper.stack = [...headings, ...(wrapper.stack as unknown[])]
+        merged.push(wrapper)
+        i = j + 1 // skip all the nodes we merged
+      } else {
+        // No unbreakable following, add headings normally
+        merged.push(...headings)
+        i = j
+      }
+    } else {
+      merged.push(current)
+      i++
+    }
+  }
+
+  return merged
+}
+
+/**
  * Recursively clean and process PDFMake content
  * - Removes whitespace-only text elements
  * - Fixes nested list margins
+ * - Applies table styles and page-break settings
+ * - Keeps headings together with immediately-following content (tables, lists, images, paragraphs)
  */
 function cleanPdfContent(content: unknown, insideList = false): unknown {
   if (Array.isArray(content)) {
-    return content
+    const cleaned = content
       .map((item) => cleanPdfContent(item, insideList))
       .filter((item) => {
         // Remove whitespace-only text objects
@@ -133,6 +300,9 @@ function cleanPdfContent(content: unknown, insideList = false): unknown {
         }
         return true
       })
+
+    // Merge any heading that directly precedes an unbreakable element
+    return mergeHeadingsWithUnbreakables(cleaned)
   }
 
   if (content && typeof content === "object") {
@@ -140,10 +310,53 @@ function cleanPdfContent(content: unknown, insideList = false): unknown {
 
     // Check if this node is a list
     const isList = "ul" in result || "ol" in result
+    // Check if this node is a table
+    const isTable = "table" in result
+    // Check if this node is an image
+    const isImage = "image" in result
+    // Check if this node is a paragraph
+    const isParagraph =
+      "text" in result &&
+      !isHeadingNode(result) &&
+      (result.nodeName === "P" ||
+        result.style === "html-p" ||
+        (Array.isArray(result.style) && result.style.includes("html-p")))
 
     // If it's a nested list (inside another list structure), remove bottom margin
     if (isList && insideList) {
       result.marginBottom = 0
+    }
+
+    // Wrap top-level lists in an unbreakable stack so short lists stay on
+    // one page (and can merge with a preceding heading). Nested lists inside
+    // another list are left alone — only the outermost list gets the wrapper.
+    if (isList && !insideList) {
+      // Recurse into the list items first
+      for (const key of ["ul", "ol"] as const) {
+        if (key in result) {
+          result[key] = cleanPdfContent(result[key], true)
+        }
+      }
+      return { stack: [result], unbreakable: true }
+    }
+
+    // Apply table styling and page-break settings.
+    // Wrap the table in an unbreakable stack so short tables stay on one
+    // page. pdfmake will still break genuinely long tables across pages
+    // using dontBreakRows + headerRows as a graceful fallback.
+    if (isTable) {
+      styleTableNode(result)
+      return { stack: [result], unbreakable: true }
+    }
+
+    // Wrap images in an unbreakable stack so they stay with a preceding heading
+    if (isImage) {
+      return { stack: [result], unbreakable: true }
+    }
+
+    // Wrap paragraphs in an unbreakable stack so they stay with a preceding heading
+    if (isParagraph) {
+      return { stack: [result], unbreakable: true }
     }
 
     for (const [key, value] of Object.entries(result)) {
