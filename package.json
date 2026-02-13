@@ -17,7 +17,8 @@
   },
   "scripts": {
     "dev": "mastra dev",
-    "build": "node ./scripts/mastra-build.mjs",
+    "build": "mastra build",
+    "build:local": "node ./scripts/mastra-build.mjs",
     "start": "mastra start",
     "supabase:gen-types": "supabase gen types typescript --schema mastra_store --schema config --local > src/types/database.types.ts",
     "typecheck": "tsc --noEmit",
