@@ -23,10 +23,23 @@ type CrossDomainRuleRow =
 /**
  * Runtime config used by handlers - combines DB row with document path
  */
+/**
+ * SharePoint sync settings in camelCase for runtime use
+ */
+export interface SharePointSync {
+  enabled: boolean
+  siteUrl: string
+  libraryName: string
+  archiveOldVersions: boolean
+  archiveSiteUrl?: string | null
+  archiveLibraryName?: string | null
+}
+
 export interface RepositoryConfig {
   repoFullName: string
   documentType: string
   documentPath: string
+  sharepointSync: SharePointSync
   approvalRequired: boolean
   domainApproval: boolean
   ownerApproval: boolean
@@ -96,6 +109,13 @@ export async function syncConfigToDatabase(
       notification_channels: config.notifications.channels,
       reminder_after_hours: config.notifications.reminder_after_hours,
       escalate_after_hours: config.notifications.escalate_after_hours,
+      sp_sync_enabled: config.sharepoint_sync.enabled,
+      sp_site_url: config.sharepoint_sync.site_url,
+      sp_library_name: config.sharepoint_sync.library_name,
+      sp_archive_old_versions: config.sharepoint_sync.archive_old_versions,
+      sp_archive_site_url: config.sharepoint_sync.archive_site_url ?? null,
+      sp_archive_library_name:
+        config.sharepoint_sync.archive_library_name ?? null,
     }
 
   // Upsert repository config
@@ -200,6 +220,12 @@ export function getDefaultConfig(repoFullName: string): RepositoryConfig {
     repoFullName,
     documentType: "policy",
     documentPath: "policies/",
+    sharepointSync: {
+      enabled: false,
+      siteUrl: "",
+      libraryName: "",
+      archiveOldVersions: false,
+    },
     approvalRequired: true,
     domainApproval: true,
     ownerApproval: true,
@@ -224,6 +250,14 @@ function mapDbRowToConfig(
     repoFullName: row.repo_full_name,
     documentType: row.document_type,
     documentPath: row.document_path,
+    sharepointSync: {
+      enabled: row.sp_sync_enabled,
+      siteUrl: row.sp_site_url ?? "",
+      libraryName: row.sp_library_name ?? "",
+      archiveOldVersions: row.sp_archive_old_versions,
+      archiveSiteUrl: row.sp_archive_site_url ?? undefined,
+      archiveLibraryName: row.sp_archive_library_name ?? undefined,
+    },
     approvalRequired: row.approval_required,
     domainApproval: row.domain_approval,
     ownerApproval: row.owner_approval,
@@ -252,6 +286,14 @@ function mapGovernanceToConfig(
     repoFullName,
     documentType: config.document.type,
     documentPath: config.document.path,
+    sharepointSync: {
+      enabled: config.sharepoint_sync.enabled,
+      siteUrl: config.sharepoint_sync.site_url,
+      libraryName: config.sharepoint_sync.library_name,
+      archiveOldVersions: config.sharepoint_sync.archive_old_versions,
+      archiveSiteUrl: config.sharepoint_sync.archive_site_url,
+      archiveLibraryName: config.sharepoint_sync.archive_library_name,
+    },
     approvalRequired: config.approval.required,
     domainApproval: config.approval.domain_approval,
     ownerApproval: config.approval.owner_approval,

@@ -5,7 +5,8 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/node": "^25.2.0",
+    "@types/node": "^25.2.3",
+    "@types/pdfmake": "^0.3.0",
     "mastra": "^1.1.0"
   },
   "peerDependencies": {
@@ -24,6 +25,7 @@
     "ngrok:dev": "ngrok http 4111 --url=https://cheeky-credibly-kasey.ngrok-free.dev"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.0",
     "@mastra/core": "^1.1.0",
     "@mastra/evals": "^1.0.1",
     "@mastra/libsql": "^1.1.0",
@@ -36,7 +38,13 @@
     "@octokit/webhooks": "^14.2.0",
     "@octokit/webhooks-types": "^7.6.1",
     "@supabase/supabase-js": "^2.95.3",
+    "@wintech-group/documentation-types": "^0.3.1",
+    "date-fns": "^4.1.0",
     "hono": "^4.11.7",
+    "html-to-pdfmake": "^2.5.32",
+    "jsdom": "^28.0.0",
+    "marked": "^17.0.1",
+    "pdfmake": "^0.3.3",
     "yaml": "^2.8.2",
     "zod": "4"
   }

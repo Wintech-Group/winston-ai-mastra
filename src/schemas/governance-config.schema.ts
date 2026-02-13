@@ -16,11 +16,11 @@ const DocumentConfigSchema = z.object({
 // SharePoint sync configuration
 const SharePointSyncConfigSchema = z.object({
   enabled: z.boolean(),
-  site_url: z.string().url(),
+  site_url: z.url(),
   library_name: z.string().min(1),
   archive_old_versions: z.boolean().optional().default(false),
-  archive_site_url: z.string().url().optional(),
-  archive_library_name: z.string().optional(),
+  archive_site_url: z.url().nullable(),
+  archive_library_name: z.string().nullable(),
 })
 
 // Auto-merge settings
@@ -41,7 +41,7 @@ const ApprovalConfigSchema = z.object({
 })
 
 // Notification channels
-const NotificationChannelSchema = z.enum(["email", "teams", "slack"])
+const NotificationChannelSchema = z.enum(["email", "teams"])
 
 // Notifications configuration
 const NotificationsConfigSchema = z.object({
