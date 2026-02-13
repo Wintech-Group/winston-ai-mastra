@@ -46,15 +46,16 @@ src/
 
 - **GitHub** is the source of truth for policy content (frontmatter markdown)
 - **Postgres + pgvector** for hybrid search (embeddings + keywords + metadata)
-- **SharePoint** for publishing native pages and hosting the chat UI
+- **SharePoint** for publishing native pages
+- **Browser extension** for the chat UI (Governance Assistant)
 - **Azure AD** for identity; staff do not need GitHub accounts
 - **Docs Bot** (GitHub App) performs all Git operations on behalf of users
 
-See [policy_system_architecture.md](docs/docs_handler/infra/policy_system_architecture.md) for full system design.
+See [architecture.md](docs/architecture.md) for full system design.
 
 ## Key Patterns
 
-- **Frontmatter markdown**: one file per policy with YAML metadata + prose body; see [policy.schema.json](docs/docs_handler/policy.schema.json)
+- **Frontmatter markdown**: one file per policy with YAML metadata + prose body; see [policy.schema.json](docs/specs/policy.schema.json)
 - **Webhook-driven**: Central service receives GitHub webhooks and triggers sync/PDF/index pipelines
 - **Mastra tools**: Agents call typed tools for all external operations (query, create branch, approve, etc.)
 - **Attribution via metadata**: Bot commits include `Authored-by:` in commit messages for audit
@@ -75,7 +76,8 @@ See [policy_system_architecture.md](docs/docs_handler/infra/policy_system_archit
 
 ## Docs
 
-- [Architecture overview](docs/docs_handler/infra/policy_system_architecture.md)
-- [Implementation plan & phases](docs/docs_handler/infra/policy_system_implementation_plan.md)
-- [Mastra tool specifications](docs/docs_handler/infra/policy_system_mastra_spec.md)
-- [ADRs](docs/docs_handler/infra/policy_system_adrs.md)
+- [Architecture overview](docs/architecture.md)
+- [Roadmap & phases](docs/roadmap.md)
+- [Mastra agent & tools](docs/stack/mastra-agent.md)
+- [ADRs](docs/adrs.md)
+- [All documentation](docs/README.md)

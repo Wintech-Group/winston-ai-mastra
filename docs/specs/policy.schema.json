@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://company.com/schemas/policy.schema.json",
   "title": "Policy Document Schema",
-  "description": "JSON Schema for policy frontmatter validation. Version 0.1.0 - intentionally minimal, will evolve with real policy conversions.",
+  "description": "JSON Schema for policy frontmatter validation. Version 1.0.0 — validates structured YAML frontmatter in policy markdown files.",
   "type": "object",
   "required": [
     "id",
@@ -37,7 +37,7 @@
     "status": {
       "type": "string",
       "description": "Current policy status",
-      "enum": ["draft", "active", "under_review", "archived"],
+      "enum": ["draft", "active", "under_review", "superseded", "archived"],
       "default": "draft"
     },
     "effective_date": {
@@ -106,12 +106,7 @@
     "rule": {
       "type": "object",
       "description": "A single rule within a policy",
-      "required": [
-        "id",
-        "domain",
-        "severity",
-        "statement"
-      ],
+      "required": ["id", "domain", "severity", "statement"],
       "properties": {
         "id": {
           "type": "string",
@@ -133,7 +128,9 @@
           "type": "string",
           "description": "The rule statement - should be evaluable as true/false",
           "minLength": 10,
-          "examples": ["All company devices must have full-disk encryption enabled."]
+          "examples": [
+            "All company devices must have full-disk encryption enabled."
+          ]
         },
         "rationale": {
           "type": "string",
@@ -158,9 +155,7 @@
     "exception": {
       "type": "object",
       "description": "An exception to a rule",
-      "required": [
-        "condition"
-      ],
+      "required": ["condition"],
       "properties": {
         "condition": {
           "type": "string",

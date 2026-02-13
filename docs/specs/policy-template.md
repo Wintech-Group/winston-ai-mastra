@@ -61,5 +61,5 @@ What happens if this policy is not followed. Who to contact with questions.
 
 ---
 
-*Document Owner: Owner Name, Title*  
-*Last Review: YYYY-MM-DD*
+_Document Owner: Owner Name, Title_  
+_Last Review: YYYY-MM-DD_
