@@ -6,33 +6,34 @@
       "name": "bun-mastra",
       "dependencies": {
         "@azure/identity": "^4.13.0",
-        "@mastra/core": "^1.1.0",
-        "@mastra/evals": "^1.0.1",
-        "@mastra/libsql": "^1.1.0",
+        "@mastra/core": "^1.4.0",
+        "@mastra/evals": "^1.1.1",
+        "@mastra/libsql": "^1.4.0",
         "@mastra/loggers": "^1.0.1",
-        "@mastra/memory": "^1.0.1",
-        "@mastra/observability": "^1.1.0",
-        "@mastra/pg": "^1.1.0",
+        "@mastra/memory": "^1.3.0",
+        "@mastra/observability": "^1.2.0",
+        "@mastra/pg": "^1.4.0",
         "@octokit/app": "^16.1.2",
         "@octokit/rest": "^22.0.1",
         "@octokit/webhooks": "^14.2.0",
         "@octokit/webhooks-types": "^7.6.1",
         "@supabase/supabase-js": "^2.95.3",
-        "@wintech-group/documentation-types": "^0.3.1",
+        "@wintech-group/documentation-types": "^0.3.2",
         "date-fns": "^4.1.0",
-        "hono": "^4.11.7",
+        "hono": "^4.11.9",
         "html-to-pdfmake": "^2.5.32",
         "jsdom": "^28.0.0",
-        "marked": "^17.0.1",
-        "pdfmake": "^0.3.3",
+        "marked": "^17.0.2",
+        "pdfmake": "^0.3.4",
         "yaml": "^2.8.2",
-        "zod": "4",
+        "zod": "^4.3.6",
       },
       "devDependencies": {
         "@types/bun": "latest",
         "@types/node": "^25.2.3",
-        "@types/pdfmake": "^0.3.0",
-        "mastra": "^1.1.0",
+        "@types/pdfmake": "^0.3.1",
+        "cross-env": "^10.1.0",
+        "mastra": "^1.3.1",
       },
       "peerDependencies": {
         "typescript": "^5.9.3",
@@ -157,6 +158,8 @@
     "@csstools/css-syntax-patches-for-csstree": ["@csstools/css-syntax-patches-for-csstree@1.0.27", "", {}, "sha512-sxP33Jwg1bviSUXAV43cVYdmjt2TLnLXNqCWl9xmxHawWVjGz/kEbdkr7F9pxJNBN2Mh+dq0crgItbW6tQvyow=="],
 
     "@csstools/css-tokenizer": ["@csstools/css-tokenizer@4.0.0", "", {}, "sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA=="],
+
+    "@epic-web/invariant": ["@epic-web/invariant@1.0.0", "", {}, "sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.25.12", "", { "os": "aix", "cpu": "ppc64" }, "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA=="],
 
@@ -597,6 +600,8 @@
     "cookie-signature": ["cookie-signature@1.0.7", "", {}, "sha512-NXdYc3dLr47pBkpUCHtKSwIOQXLVn8dZEuywboCOJY/osA0wFSLlSawr3KN8qXJEyX66FcONTH8EIlVuK0yyFA=="],
 
     "cors": ["cors@2.8.6", "", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw=="],
+
+    "cross-env": ["cross-env@10.1.0", "", { "dependencies": { "@epic-web/invariant": "^1.0.0", "cross-spawn": "^7.0.6" }, "bin": { "cross-env": "dist/bin/cross-env.js", "cross-env-shell": "dist/bin/cross-env-shell.js" } }, "sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw=="],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 

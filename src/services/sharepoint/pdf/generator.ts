@@ -13,7 +13,7 @@
 import { createRequire } from "module"
 import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
-import { dirname, join } from "path"
+import { dirname, join, parse } from "path"
 import type {
   Content,
   DynamicContent,
@@ -42,7 +42,7 @@ const __dirname = dirname(__filename)
 
 function findProjectRoot(startDir: string): string {
   let dir = startDir
-  const { root } = require("path").parse(dir)
+  const { root } = parse(dir)
   while (dir !== root) {
     try {
       const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"))
