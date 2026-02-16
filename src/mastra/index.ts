@@ -15,9 +15,11 @@ import {
 } from "./scorers/weather-scorer"
 import { PostgresStore } from "@mastra/pg"
 import { githubWebhookRoute } from "./webhooks/github"
+import { VercelDeployer } from "@mastra/deployer-vercel"
 
 export const mastra = new Mastra({
   agents: { weatherAgent },
+  deployer: new VercelDeployer(),
   bundler: {
     externals: ["pdfmake"],
   },
