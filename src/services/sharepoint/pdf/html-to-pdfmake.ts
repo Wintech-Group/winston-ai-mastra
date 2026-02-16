@@ -7,11 +7,30 @@
 import type { Content } from "pdfmake/interfaces"
 // @ts-expect-error - html-to-pdfmake doesn't have type definitions
 import htmlToPdfmake from "html-to-pdfmake"
-// @ts-expect-error - jsdom doesn't have bundled types
-import { JSDOM } from "jsdom"
 
-// Create a window object for html-to-pdfmake (required in Node.js/Bun)
-const { window } = new JSDOM("")
+// linkedom's DOMParser doesn't place HTML fragments inside <body> when
+// parsing 'text/html', which causes html-to-pdfmake to return empty output.
+// We wrap the markup in a full document structure before parsing, and pass
+// a plain object as `window` since linkedom's window silently ignores
+// property assignment (so we can't override DOMParser on it directly).
+import { parseHTML, DOMParser } from "linkedom"
+
+const { document } = parseHTML("<!DOCTYPE html><html></html>")
+
+function FragmentSafeDOMParser() {}
+FragmentSafeDOMParser.prototype.parseFromString = function (
+  markup: string,
+  type: "text/html" | "image/svg+xml" | "text/xml",
+) {
+  const parser = new DOMParser()
+  if (type === "text/html" && !markup.includes("<body")) {
+    markup =
+      "<!DOCTYPE html><html><head></head><body>" + markup + "</body></html>"
+  }
+  return parser.parseFromString(markup, type)
+}
+
+const window = { document, DOMParser: FragmentSafeDOMParser }
 
 /**
  * Regex pattern to match emojis

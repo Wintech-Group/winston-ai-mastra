@@ -11,9 +11,7 @@
  */
 
 import { createRequire } from "module"
-import { readFileSync } from "fs"
-import { fileURLToPath } from "url"
-import { dirname, join, parse } from "path"
+import "pdfmake"
 import type {
   Content,
   DynamicContent,
@@ -27,69 +25,49 @@ import {
   type PdfOptions,
   type PdfResult,
 } from "./types"
+import { ABC_NORMAL_FONTS, LOGOS } from "./embedded-assets"
 
 // createRequire gives us CJS-compatible require/resolve inside ESM bundles,
 // avoiding the ERR_AMBIGUOUS_MODULE_SYNTAX conflict with top-level await.
 const _require = createRequire(import.meta.url)
 const pdfmake = _require("pdfmake")
 
-// Resolve the source file location so we can find our fonts directory.
-// When Mastra bundles, __dirname would point to .mastra/output, but the source
-// fonts live relative to the original source file. We walk up from this file's
-// location to find the project root (the one with our actual package.json name).
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// Register fonts via pdfmake's VFS so they work everywhere (local, Vercel, etc.)
+// without needing font files on the filesystem at runtime.
+const fontNames = {
+  normal: "ABCNormal-Normal.ttf",
+  bold: "ABCNormal-Medium.ttf",
+  italics: "ABCNormal-NormalOblique.ttf",
+  bolditalics: "ABCNormal-MediumOblique.ttf",
+} as const
 
-function findProjectRoot(startDir: string): string {
-  let dir = startDir
-  const { root } = parse(dir)
-  while (dir !== root) {
-    try {
-      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"))
-      if (pkg.name === "bun-mastra") return dir
-    } catch {
-      // no package.json here, keep going
-    }
-    dir = dirname(dir)
-  }
-  throw new Error("Could not find project root (bun-mastra package.json)")
-}
-
-const projectRoot = findProjectRoot(__dirname)
-const fontDir = join(
-  projectRoot,
-  "src",
-  "services",
-  "sharepoint",
-  "pdf",
-  "fonts",
+pdfmake.virtualfs.writeFileSync(fontNames.normal, ABC_NORMAL_FONTS.normal)
+pdfmake.virtualfs.writeFileSync(fontNames.bold, ABC_NORMAL_FONTS.bold)
+pdfmake.virtualfs.writeFileSync(fontNames.italics, ABC_NORMAL_FONTS.italics)
+pdfmake.virtualfs.writeFileSync(
+  fontNames.bolditalics,
+  ABC_NORMAL_FONTS.bolditalics,
 )
 
-// Server-side: pass absolute file paths directly — VFS is client-side only
 const fonts: TFontDictionary = {
-  ABCNormal: {
-    normal: join(fontDir, "ABCNormal-Normal.ttf"),
-    bold: join(fontDir, "ABCNormal-Medium.ttf"),
-    italics: join(fontDir, "ABCNormal-NormalOblique.ttf"),
-    bolditalics: join(fontDir, "ABCNormal-MediumOblique.ttf"),
-  },
+  ABCNormal: fontNames,
 }
 
 pdfmake.addFonts(fonts)
 
 /**
- * Resolve the absolute path to a logo in the bundled logos directory.
+ * Resolve a logo by filename, returning its embedded asset entry.
+ * Returns a data URL for raster images. For SVGs, returns the data URL
+ * but buildSectionContent will use the raw SVG string instead.
  */
 export function resolveLogoPath(filename: string): string {
-  return join(
-    projectRoot,
-    "src",
-    "services",
-    "sharepoint",
-    "pdf",
-    "logos",
-    filename,
-  )
+  const logo = LOGOS[filename as keyof typeof LOGOS]
+  if (!logo) {
+    throw new Error(
+      `Unknown logo: "${filename}". Available: ${Object.keys(LOGOS).join(", ")}`,
+    )
+  }
+  return logo.dataUrl
 }
 
 /**
@@ -110,19 +88,21 @@ function buildSectionContent(
 
   // Image
   if (section.image) {
-    const isSvg = section.image.toLowerCase().endsWith(".svg")
+    const imagePath = section.image
 
-    if (isSvg) {
-      const svgContent = readFileSync(section.image, "utf-8")
+    // Check if this is an embedded SVG logo (has raw SVG content available)
+    const logoEntry = Object.values(LOGOS).find((l) => l.dataUrl === imagePath)
+    if (logoEntry && "svg" in logoEntry) {
       items.push({
-        svg: svgContent,
+        svg: logoEntry.svg,
         width: section.imageWidth ?? 110,
         height: section.imageHeight,
         alignment,
       } as Content)
     } else {
+      // Data URL (PNG, etc.) or external image path
       items.push({
-        image: section.image,
+        image: imagePath,
         width: section.imageWidth ?? 110,
         height: section.imageHeight,
         alignment,
