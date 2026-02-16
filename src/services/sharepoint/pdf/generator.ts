@@ -13,7 +13,7 @@
 import { createRequire } from "module"
 import { existsSync, readFileSync } from "fs"
 import { fileURLToPath } from "url"
-import { dirname, join } from "path"
+import { dirname, join, parse } from "path"
 import "pdfmake"
 import type {
   Content,
@@ -37,31 +37,38 @@ const pdfmake = _require("pdfmake")
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+function getAncestorDirs(startDir: string): string[] {
+  const dirs: string[] = []
+  let dir = startDir
+  const { root } = parse(dir)
+
+  while (true) {
+    dirs.push(dir)
+    if (dir === root) break
+    dir = dirname(dir)
+  }
+
+  return dirs
+}
+
 function resolvePdfAssetPath(
   assetType: "fonts" | "logos",
   filename: string,
 ): string {
-  const candidates = [
-    join(
-      process.cwd(),
-      "src",
-      "services",
-      "sharepoint",
-      "pdf",
-      assetType,
-      filename,
-    ),
-    join(__dirname, assetType, filename),
-    join(
-      __dirname,
-      "src",
-      "services",
-      "sharepoint",
-      "pdf",
-      assetType,
-      filename,
-    ),
+  const searchRoots = [
+    ...getAncestorDirs(process.cwd()),
+    ...getAncestorDirs(__dirname),
   ]
+
+  const uniqueRoots = Array.from(new Set(searchRoots))
+  const candidates: string[] = []
+
+  for (const root of uniqueRoots) {
+    candidates.push(
+      join(root, "src", "services", "sharepoint", "pdf", assetType, filename),
+    )
+    candidates.push(join(root, assetType, filename))
+  }
 
   const found = candidates.find((path) => existsSync(path))
   return found ?? filename
@@ -88,9 +95,13 @@ const fonts: TFontDictionary = {
   },
 }
 
-if (hasCustomFonts) {
-  pdfmake.addFonts(fonts)
+if (!hasCustomFonts) {
+  throw new Error(
+    `Custom PDF fonts are missing. Expected files at: ${Object.values(customFontPaths).join(", ")}`,
+  )
 }
+
+pdfmake.addFonts(fonts)
 
 /**
  * Resolve the absolute path to a logo in the bundled logos directory.
@@ -280,7 +291,7 @@ function buildDocumentDefinition(
     content,
 
     defaultStyle: {
-      ...(hasCustomFonts && { font: "ABCNormal" }),
+      font: "ABCNormal",
       fontSize: 11,
       lineHeight: 1.3,
     },
