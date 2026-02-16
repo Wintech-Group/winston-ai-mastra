@@ -19,7 +19,7 @@ import { githubWebhookRoute } from "./webhooks/github"
 export const mastra = new Mastra({
   agents: { weatherAgent },
   bundler: {
-    externals: true,
+    externals: ["pdfmake"],
   },
   workflows: { weatherWorkflow },
   scorers: {
