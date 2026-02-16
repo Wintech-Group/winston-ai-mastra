@@ -44,10 +44,10 @@ Winston Agent (this repo)
     ├── Query policies (hybrid search)
     ├── Submit suggestions (creates GitHub Issues)
     ├── Create/approve changes (branches, PRs)
-    └── Embedded in SharePoint via SPFx web part
+    └── Accessible via browser extension (chat UI)
 ```
 
-See [Architecture docs](docs/docs_handler/infra/policy_system_architecture.md) for full details.
+See [Architecture](docs/architecture.md) for full details.
 
 ---
 
@@ -88,10 +88,13 @@ src/
     ├── api/             # Hono routes (webhooks, health)
     └── services/        # SharePoint sync, PDF, indexing
 
-docs/docs_handler/
-├── infra/               # Architecture, implementation plan, ADRs
-├── policy.schema.json   # JSON Schema for policy frontmatter
-└── policy-template.md   # Template for new policies
+docs/
+├── architecture.md      # System architecture
+├── roadmap.md           # Phased implementation plan
+├── adrs.md              # Architecture decision records
+├── specs/               # Policy model, schema, template
+├── stack/               # Per-component detail docs
+└── reference/           # Example code, sample payloads
 
 supabase/                # Local Supabase config
 ```
@@ -100,12 +103,14 @@ supabase/                # Local Supabase config
 
 ## Documentation
 
-| Document                                                                            | Purpose                              |
-| ----------------------------------------------------------------------------------- | ------------------------------------ |
-| [Architecture](docs/docs_handler/infra/policy_system_architecture.md)               | System design, components, data flow |
-| [Implementation Plan](docs/docs_handler/infra/policy_system_implementation_plan.md) | Phased delivery roadmap              |
-| [Mastra Spec](docs/docs_handler/infra/policy_system_mastra_spec.md)                 | Tool definitions and agent skills    |
-| [ADRs](docs/docs_handler/infra/policy_system_adrs.md)                               | Architectural decision records       |
+| Document                                                 | Purpose                              |
+| -------------------------------------------------------- | ------------------------------------ |
+| [Architecture](docs/architecture.md)                     | System design, components, data flow |
+| [Roadmap](docs/roadmap.md)                               | Phased implementation plan           |
+| [ADRs](docs/adrs.md)                                     | Architecture decision records        |
+| [Policy Requirements](docs/specs/policy-requirements.md) | Policy model and system requirements |
+| [Mastra Agent & Tools](docs/stack/mastra-agent.md)       | Agent definition and tool specs      |
+| [All Docs](docs/README.md)                               | Documentation index                  |
 
 ---
 
