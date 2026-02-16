@@ -11,9 +11,6 @@
  */
 
 import { createRequire } from "module"
-import { existsSync, readFileSync } from "fs"
-import { fileURLToPath } from "url"
-import { dirname, join, parse } from "path"
 import "pdfmake"
 import type {
   Content,
@@ -28,86 +25,49 @@ import {
   type PdfOptions,
   type PdfResult,
 } from "./types"
+import { ABC_NORMAL_FONTS, LOGOS } from "./embedded-assets"
 
 // createRequire gives us CJS-compatible require/resolve inside ESM bundles,
 // avoiding the ERR_AMBIGUOUS_MODULE_SYNTAX conflict with top-level await.
 const _require = createRequire(import.meta.url)
 const pdfmake = _require("pdfmake")
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// Register fonts via pdfmake's VFS so they work everywhere (local, Vercel, etc.)
+// without needing font files on the filesystem at runtime.
+const fontNames = {
+  normal: "ABCNormal-Normal.ttf",
+  bold: "ABCNormal-Medium.ttf",
+  italics: "ABCNormal-NormalOblique.ttf",
+  bolditalics: "ABCNormal-MediumOblique.ttf",
+} as const
 
-function getAncestorDirs(startDir: string): string[] {
-  const dirs: string[] = []
-  let dir = startDir
-  const { root } = parse(dir)
-
-  while (true) {
-    dirs.push(dir)
-    if (dir === root) break
-    dir = dirname(dir)
-  }
-
-  return dirs
-}
-
-function resolvePdfAssetPath(
-  assetType: "fonts" | "logos",
-  filename: string,
-): string {
-  const searchRoots = [
-    ...getAncestorDirs(process.cwd()),
-    ...getAncestorDirs(__dirname),
-  ]
-
-  const uniqueRoots = Array.from(new Set(searchRoots))
-  const candidates: string[] = []
-
-  for (const root of uniqueRoots) {
-    candidates.push(
-      join(root, "src", "services", "sharepoint", "pdf", assetType, filename),
-    )
-    candidates.push(join(root, assetType, filename))
-  }
-
-  const found = candidates.find((path) => existsSync(path))
-  return found ?? filename
-}
-
-const customFontPaths = {
-  normal: resolvePdfAssetPath("fonts", "ABCNormal-Normal.ttf"),
-  bold: resolvePdfAssetPath("fonts", "ABCNormal-Medium.ttf"),
-  italics: resolvePdfAssetPath("fonts", "ABCNormal-NormalOblique.ttf"),
-  bolditalics: resolvePdfAssetPath("fonts", "ABCNormal-MediumOblique.ttf"),
-}
-
-const hasCustomFonts = Object.values(customFontPaths).every((path) =>
-  existsSync(path),
+pdfmake.virtualfs.writeFileSync(fontNames.normal, ABC_NORMAL_FONTS.normal)
+pdfmake.virtualfs.writeFileSync(fontNames.bold, ABC_NORMAL_FONTS.bold)
+pdfmake.virtualfs.writeFileSync(fontNames.italics, ABC_NORMAL_FONTS.italics)
+pdfmake.virtualfs.writeFileSync(
+  fontNames.bolditalics,
+  ABC_NORMAL_FONTS.bolditalics,
 )
 
-// Server-side: pass absolute file paths directly — VFS is client-side only
 const fonts: TFontDictionary = {
-  ABCNormal: {
-    normal: customFontPaths.normal,
-    bold: customFontPaths.bold,
-    italics: customFontPaths.italics,
-    bolditalics: customFontPaths.bolditalics,
-  },
-}
-
-if (!hasCustomFonts) {
-  throw new Error(
-    `Custom PDF fonts are missing. Expected files at: ${Object.values(customFontPaths).join(", ")}`,
-  )
+  ABCNormal: fontNames,
 }
 
 pdfmake.addFonts(fonts)
 
 /**
- * Resolve the absolute path to a logo in the bundled logos directory.
+ * Resolve a logo by filename, returning its embedded asset entry.
+ * Returns a data URL for raster images. For SVGs, returns the data URL
+ * but buildSectionContent will use the raw SVG string instead.
  */
 export function resolveLogoPath(filename: string): string {
-  return resolvePdfAssetPath("logos", filename)
+  const logo = LOGOS[filename as keyof typeof LOGOS]
+  if (!logo) {
+    throw new Error(
+      `Unknown logo: "${filename}". Available: ${Object.keys(LOGOS).join(", ")}`,
+    )
+  }
+  return logo.dataUrl
 }
 
 /**
@@ -129,27 +89,24 @@ function buildSectionContent(
   // Image
   if (section.image) {
     const imagePath = section.image
-    const isDataUrl = imagePath.startsWith("data:")
-    const imageExists = isDataUrl || existsSync(imagePath)
-    const isSvg = imagePath.toLowerCase().endsWith(".svg")
 
-    if (imageExists) {
-      if (isSvg && !isDataUrl) {
-        const svgContent = readFileSync(imagePath, "utf-8")
-        items.push({
-          svg: svgContent,
-          width: section.imageWidth ?? 110,
-          height: section.imageHeight,
-          alignment,
-        } as Content)
-      } else {
-        items.push({
-          image: imagePath,
-          width: section.imageWidth ?? 110,
-          height: section.imageHeight,
-          alignment,
-        } as Content)
-      }
+    // Check if this is an embedded SVG logo (has raw SVG content available)
+    const logoEntry = Object.values(LOGOS).find((l) => l.dataUrl === imagePath)
+    if (logoEntry && "svg" in logoEntry) {
+      items.push({
+        svg: logoEntry.svg,
+        width: section.imageWidth ?? 110,
+        height: section.imageHeight,
+        alignment,
+      } as Content)
+    } else {
+      // Data URL (PNG, etc.) or external image path
+      items.push({
+        image: imagePath,
+        width: section.imageWidth ?? 110,
+        height: section.imageHeight,
+        alignment,
+      } as Content)
     }
   }
 

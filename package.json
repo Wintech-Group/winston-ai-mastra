@@ -19,6 +19,7 @@
     "dev": "mastra dev",
     "build": "mastra build",
     "build:local": "node ./scripts/mastra-build.mjs",
+    "generate:pdf-assets": "bun scripts/generate-pdf-assets.ts",
     "start": "mastra start",
     "supabase:gen-types": "supabase gen types typescript --schema mastra_store --schema config --local > src/types/database.types.ts",
     "typecheck": "tsc --noEmit",
