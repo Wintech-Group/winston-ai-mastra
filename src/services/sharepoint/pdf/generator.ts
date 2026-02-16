@@ -11,9 +11,9 @@
  */
 
 import { createRequire } from "module"
-import { readFileSync } from "fs"
+import { existsSync, readFileSync } from "fs"
 import { fileURLToPath } from "url"
-import { dirname, join, parse } from "path"
+import { dirname, join } from "path"
 import "pdfmake"
 import type {
   Content,
@@ -34,63 +34,69 @@ import {
 const _require = createRequire(import.meta.url)
 const pdfmake = _require("pdfmake")
 
-// Resolve the source file location so we can find our fonts directory.
-// When Mastra bundles, __dirname would point to .mastra/output, but the source
-// fonts live relative to the original source file. We walk up from this file's
-// location to find the project root (the one with our actual package.json name).
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-function findProjectRoot(startDir: string): string {
-  let dir = startDir
-  const { root } = parse(dir)
-  while (dir !== root) {
-    try {
-      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"))
-      if (pkg.name === "bun-mastra") return dir
-    } catch {
-      // no package.json here, keep going
-    }
-    dir = dirname(dir)
-  }
-  throw new Error("Could not find project root (bun-mastra package.json)")
+function resolvePdfAssetPath(
+  assetType: "fonts" | "logos",
+  filename: string,
+): string {
+  const candidates = [
+    join(
+      process.cwd(),
+      "src",
+      "services",
+      "sharepoint",
+      "pdf",
+      assetType,
+      filename,
+    ),
+    join(__dirname, assetType, filename),
+    join(
+      __dirname,
+      "src",
+      "services",
+      "sharepoint",
+      "pdf",
+      assetType,
+      filename,
+    ),
+  ]
+
+  const found = candidates.find((path) => existsSync(path))
+  return found ?? filename
 }
 
-const projectRoot = findProjectRoot(__dirname)
-const fontDir = join(
-  projectRoot,
-  "src",
-  "services",
-  "sharepoint",
-  "pdf",
-  "fonts",
+const customFontPaths = {
+  normal: resolvePdfAssetPath("fonts", "ABCNormal-Normal.ttf"),
+  bold: resolvePdfAssetPath("fonts", "ABCNormal-Medium.ttf"),
+  italics: resolvePdfAssetPath("fonts", "ABCNormal-NormalOblique.ttf"),
+  bolditalics: resolvePdfAssetPath("fonts", "ABCNormal-MediumOblique.ttf"),
+}
+
+const hasCustomFonts = Object.values(customFontPaths).every((path) =>
+  existsSync(path),
 )
 
 // Server-side: pass absolute file paths directly — VFS is client-side only
 const fonts: TFontDictionary = {
   ABCNormal: {
-    normal: join(fontDir, "ABCNormal-Normal.ttf"),
-    bold: join(fontDir, "ABCNormal-Medium.ttf"),
-    italics: join(fontDir, "ABCNormal-NormalOblique.ttf"),
-    bolditalics: join(fontDir, "ABCNormal-MediumOblique.ttf"),
+    normal: customFontPaths.normal,
+    bold: customFontPaths.bold,
+    italics: customFontPaths.italics,
+    bolditalics: customFontPaths.bolditalics,
   },
 }
 
-pdfmake.addFonts(fonts)
+if (hasCustomFonts) {
+  pdfmake.addFonts(fonts)
+}
 
 /**
  * Resolve the absolute path to a logo in the bundled logos directory.
  */
 export function resolveLogoPath(filename: string): string {
-  return join(
-    projectRoot,
-    "src",
-    "services",
-    "sharepoint",
-    "pdf",
-    "logos",
-    filename,
-  )
+  return resolvePdfAssetPath("logos", filename)
 }
 
 /**
@@ -111,23 +117,28 @@ function buildSectionContent(
 
   // Image
   if (section.image) {
-    const isSvg = section.image.toLowerCase().endsWith(".svg")
+    const imagePath = section.image
+    const isDataUrl = imagePath.startsWith("data:")
+    const imageExists = isDataUrl || existsSync(imagePath)
+    const isSvg = imagePath.toLowerCase().endsWith(".svg")
 
-    if (isSvg) {
-      const svgContent = readFileSync(section.image, "utf-8")
-      items.push({
-        svg: svgContent,
-        width: section.imageWidth ?? 110,
-        height: section.imageHeight,
-        alignment,
-      } as Content)
-    } else {
-      items.push({
-        image: section.image,
-        width: section.imageWidth ?? 110,
-        height: section.imageHeight,
-        alignment,
-      } as Content)
+    if (imageExists) {
+      if (isSvg && !isDataUrl) {
+        const svgContent = readFileSync(imagePath, "utf-8")
+        items.push({
+          svg: svgContent,
+          width: section.imageWidth ?? 110,
+          height: section.imageHeight,
+          alignment,
+        } as Content)
+      } else {
+        items.push({
+          image: imagePath,
+          width: section.imageWidth ?? 110,
+          height: section.imageHeight,
+          alignment,
+        } as Content)
+      }
     }
   }
 
@@ -269,7 +280,7 @@ function buildDocumentDefinition(
     content,
 
     defaultStyle: {
-      font: "ABCNormal",
+      ...(hasCustomFonts && { font: "ABCNormal" }),
       fontSize: 11,
       lineHeight: 1.3,
     },
