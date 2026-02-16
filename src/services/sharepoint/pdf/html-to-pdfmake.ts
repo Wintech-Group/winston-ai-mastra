@@ -7,11 +7,10 @@
 import type { Content } from "pdfmake/interfaces"
 // @ts-expect-error - html-to-pdfmake doesn't have type definitions
 import htmlToPdfmake from "html-to-pdfmake"
-// @ts-expect-error - jsdom doesn't have bundled types
-import { JSDOM } from "jsdom"
 
 // Create a window object for html-to-pdfmake (required in Node.js/Bun)
-const { window } = new JSDOM("")
+import { parseHTML } from "linkedom"
+const { window } = parseHTML("<!DOCTYPE html><html></html>")
 
 /**
  * Regex pattern to match emojis

@@ -47,3 +47,6 @@ dist
 *.pem
 *-private-key.pem
 dev-private-key.pem
+
+# Vercel
+.vercel
