@@ -21,7 +21,7 @@ export const mastra = new Mastra({
   agents: { weatherAgent },
   deployer: new VercelDeployer(),
   bundler: {
-    externals: ["pdfmake", "linkedom"],
+    externals: ["canvas", "linkedom", "pdfmake"],
   },
   workflows: { weatherWorkflow },
   scorers: {
