@@ -12,7 +12,7 @@ import {
   type CrossDomainRule,
 } from "../schemas/governance-config.schema"
 import { getSupabaseClient } from "./supabase-client"
-import { fetchFileContent } from "./github-client"
+import { fetchFileContent } from "./github"
 import type { Database } from "../types/database.types"
 
 type RepositoryConfigRow =

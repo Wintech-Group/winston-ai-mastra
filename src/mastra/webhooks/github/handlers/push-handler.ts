@@ -6,7 +6,7 @@ import { loadOrSyncConfig } from "../../../../services/config-service"
 import {
   fetchBinaryContent,
   fetchFileContent,
-} from "../../../../services/github-client"
+} from "../../../../services/github"
 import { extname } from "path"
 import { formatDateToISO } from "../../../../utils/date"
 import {
