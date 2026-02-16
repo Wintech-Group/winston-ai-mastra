@@ -14,6 +14,7 @@ import { createRequire } from "module"
 import { readFileSync } from "fs"
 import { fileURLToPath } from "url"
 import { dirname, join, parse } from "path"
+import "pdfmake"
 import type {
   Content,
   DynamicContent,
