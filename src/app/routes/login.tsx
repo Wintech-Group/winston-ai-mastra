@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/card"
 
 export const Route = createFileRoute("/login")({
+  beforeLoad: ({ context }) => {
+    if (context.auth.isAuthenticated) {
+      throw redirect({ to: "/chat" })
+    }
+  },
   component: LoginPage,
 })
 
@@ -23,7 +28,12 @@ function LoginPage() {
           <CardDescription>Sign in to continue</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => auth.login()} size="lg" className="w-full">
+          <Button
+            onClick={() => auth.login()}
+            size="lg"
+            className="w-full"
+            disabled={auth.isLoading}
+          >
             Sign in with Microsoft
           </Button>
         </CardContent>

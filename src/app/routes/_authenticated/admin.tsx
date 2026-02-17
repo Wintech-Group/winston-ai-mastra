@@ -1,13 +1,7 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { Separator } from "@/components/ui/separator"
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  beforeLoad: ({ context }) => {
-    const roles = context.auth.user?.roles ?? []
-    if (!roles.includes("admin")) {
-      throw redirect({ to: "/chat" })
-    }
-  },
   component: AdminLayout,
 })
 
