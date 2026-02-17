@@ -2,6 +2,7 @@ import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
 import path from "path"
+import tailwindcss from "@tailwindcss/vite"
 
 export default defineConfig({
   plugins: [
@@ -10,12 +11,13 @@ export default defineConfig({
       generatedRouteTree: "src/app/routeTree.gen.ts",
     }),
     react(),
+    tailwindcss(),
   ],
   root: ".",
   publicDir: "src/app/public",
   resolve: {
     alias: {
-      "@app": path.resolve(__dirname, "src/app"),
+      "@": path.resolve(__dirname, "src/app"),
     },
   },
   build: {
