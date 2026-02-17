@@ -3,9 +3,8 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/app/*"]
+      "@app/*": ["./src/app/*"]
     }
   },
   "include": ["src/app/**/*", "vite-env.d.ts"]

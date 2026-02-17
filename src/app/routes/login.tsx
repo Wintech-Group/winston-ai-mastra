@@ -1,19 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { createFileRoute } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/login")({
-  beforeLoad: ({ context }) => {
-    if (context.auth.isAuthenticated) {
-      throw redirect({ to: "/chat" })
-    }
-  },
   component: LoginPage,
 })
 
@@ -21,23 +8,28 @@ function LoginPage() {
   const { auth } = Route.useRouteContext()
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh]">
-      <Card className="w-full max-w-sm text-center">
-        <CardHeader>
-          <CardTitle className="text-2xl">Winston AI</CardTitle>
-          <CardDescription>Sign in to continue</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={() => auth.login()}
-            size="lg"
-            className="w-full"
-            disabled={auth.isLoading}
-          >
-            Sign in with Microsoft
-          </Button>
-        </CardContent>
-      </Card>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "80vh",
+      }}
+    >
+      <div style={{ textAlign: "center" }}>
+        <h1>Winston AI</h1>
+        <p>Sign in to continue</p>
+        <button
+          onClick={() => auth.login()}
+          style={{
+            padding: "0.75rem 2rem",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
+        >
+          Sign in with Microsoft
+        </button>
+      </div>
     </div>
   )
 }

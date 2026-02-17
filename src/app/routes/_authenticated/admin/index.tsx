@@ -1,10 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminDashboard,
@@ -12,11 +6,9 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 
 function AdminDashboard() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Dashboard</CardTitle>
-        <CardDescription>Admin dashboard coming soon.</CardDescription>
-      </CardHeader>
-    </Card>
+    <div>
+      <h3>Dashboard</h3>
+      <p>Admin dashboard coming soon.</p>
+    </div>
   )
 }

@@ -1,8 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 
 export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatPage,
@@ -10,23 +6,32 @@ export const Route = createFileRoute("/_authenticated/chat")({
 
 function ChatPage() {
   return (
-    <div className="flex flex-col h-[calc(100vh-57px)]">
-      <ScrollArea className="flex-1 p-4">
-        <p className="text-muted-foreground">
-          Start a conversation with Winston...
-        </p>
-      </ScrollArea>
-      <Separator />
-      <div className="p-4">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 60px)",
+      }}
+    >
+      <div style={{ flex: 1, overflowY: "auto", padding: "1rem" }}>
+        <p style={{ color: "#6b7280" }}>Start a conversation with Winston...</p>
+      </div>
+      <div style={{ borderTop: "1px solid #e5e7eb", padding: "1rem" }}>
         <form
           onSubmit={(e) => {
             e.preventDefault()
             // TODO: wire up to mastra-client
           }}
-          className="flex gap-2"
+          style={{ display: "flex", gap: "0.5rem" }}
         >
-          <Input type="text" placeholder="Ask Winston..." className="flex-1" />
-          <Button type="submit">Send</Button>
+          <input
+            type="text"
+            placeholder="Ask Winston..."
+            style={{ flex: 1, padding: "0.5rem", fontSize: "1rem" }}
+          />
+          <button type="submit" style={{ padding: "0.5rem 1rem" }}>
+            Send
+          </button>
         </form>
       </div>
     </div>
