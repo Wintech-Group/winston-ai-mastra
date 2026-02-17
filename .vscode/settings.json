@@ -1,5 +1,5 @@
 {
-  "npm.exclude": ["**/packagesnpm/**", "**/.mastra/**"],
+  "npm.exclude": ["**/packagesnpm/**", "**/.mastra/**", "**/.vercel/**"],
   "files.exclude": {
     "**/packagesnpm": true
   }

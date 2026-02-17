@@ -59,7 +59,7 @@ CREATE INDEX idx_domain_owners_domain ON config.domain_owners(domain_id);
 -- REPOSITORY CONFIGURATION TABLES
 -- =====================================================================
 
--- Repository workflow configuration (synced from each repo's governance.yaml)
+-- Repository workflow configuration (synced from each repo's repo-config.yaml)
 CREATE TABLE config.repository_config (
     repo_full_name          TEXT PRIMARY KEY,       -- 'Wintech-Group/docs-policy-governance'
     document_type           TEXT NOT NULL,          -- 'policies', 'sops', 'tech-docs'
@@ -79,7 +79,7 @@ CREATE TABLE config.repository_config (
     notification_channels   TEXT[] DEFAULT ARRAY['email']::TEXT[],  -- ['email', 'teams']
     
     -- Sync metadata
-    config_file_path        TEXT DEFAULT 'metadata/governance.yaml' NOT NULL,
+    config_file_path        TEXT DEFAULT 'metadata/repo-config.yaml' NOT NULL,
     config_sha              TEXT,                   -- SHA of last synced config file
     synced_at               TIMESTAMPTZ,
     
@@ -87,13 +87,13 @@ CREATE TABLE config.repository_config (
     updated_at              TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-COMMENT ON TABLE config.repository_config IS 'Per-repository workflow configuration (synced from governance.yaml on push)';
+COMMENT ON TABLE config.repository_config IS 'Per-repository workflow configuration (synced from repo-config.yaml on push)';
 COMMENT ON COLUMN config.repository_config.repo_full_name IS 'Full repository name (owner/repo)';
 COMMENT ON COLUMN config.repository_config.document_type IS 'Type of documents in this repo';
 COMMENT ON COLUMN config.repository_config.approval_required IS 'Whether any approval is required for changes';
 COMMENT ON COLUMN config.repository_config.domain_approval IS 'Whether domain owner approval is required';
 COMMENT ON COLUMN config.repository_config.auto_merge_enabled IS 'Whether to auto-merge after all approvals received';
-COMMENT ON COLUMN config.repository_config.config_sha IS 'SHA of governance.yaml at last sync';
+COMMENT ON COLUMN config.repository_config.config_sha IS 'SHA of repo-config.yaml at last sync';
 COMMENT ON COLUMN config.repository_config.synced_at IS 'When config was last synced from repo';
 
 -- Cross-domain rules (patterns that require multiple domain approvals)

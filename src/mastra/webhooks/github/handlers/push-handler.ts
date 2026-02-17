@@ -18,7 +18,6 @@ import {
   resolveLogoPath,
   uploadFileToLibrary,
   type ImageFetcher,
-  type LibraryTarget,
 } from "../../../../services/sharepoint"
 
 type PushEvent = EmitterWebhookEvent<"push">
@@ -49,7 +48,7 @@ export async function handlePushEvent({ id, payload }: PushEvent) {
   })
 
   // Load or sync repository configuration
-  // If governance.yaml changed, this will fetch, validate, and sync to DB
+  // If repo-config.yaml changed, this will fetch, validate, and sync to DB
   const repoConfig = await loadOrSyncConfig({
     repoFullName,
     configFiles: configChanges.update,

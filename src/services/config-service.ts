@@ -1,14 +1,14 @@
 /**
- * Configuration service for repository governance settings
+ * Configuration service for documentation repository settings
  *
- * Handles parsing, validation, and database sync of governance.yaml files.
+ * Handles parsing, validation, and database sync of repo-config.yaml files.
  * Provides fallback to database or defaults when config sync fails.
  */
 
 import { parse as parseYaml } from "yaml"
 import {
-  GovernanceConfigSchema,
-  type GovernanceConfig,
+  DocumentRepoConfigurationSchema,
+  type DocumentRepoConfig,
   type CrossDomainRule,
 } from "../schemas/governance-config.schema"
 import { getSupabaseClient } from "./supabase-client"
@@ -53,7 +53,7 @@ export interface RepositoryConfig {
 }
 
 // Standard config file path in content repositories
-const CONFIG_FILE_PATH = "metadata/governance.yaml"
+const CONFIG_FILE_PATH = "metadata/repo-config.yaml"
 
 /**
  * Parse YAML content and validate against schema
@@ -62,10 +62,10 @@ const CONFIG_FILE_PATH = "metadata/governance.yaml"
  */
 export function parseAndValidateConfig(
   yamlContent: string,
-): GovernanceConfig | null {
+): DocumentRepoConfig | null {
   try {
     const parsed = parseYaml(yamlContent)
-    const result = GovernanceConfigSchema.safeParse(parsed)
+    const result = DocumentRepoConfigurationSchema.safeParse(parsed)
 
     if (!result.success) {
       console.error("Config validation failed:", result.error.issues)
@@ -86,7 +86,7 @@ export function parseAndValidateConfig(
  */
 export async function syncConfigToDatabase(
   repoFullName: string,
-  config: GovernanceConfig,
+  config: DocumentRepoConfig,
   sha: string,
 ): Promise<void> {
   const supabase = getSupabaseClient()
@@ -280,7 +280,7 @@ function mapDbRowToConfig(
  */
 function mapGovernanceToConfig(
   repoFullName: string,
-  config: GovernanceConfig,
+  config: DocumentRepoConfig,
 ): RepositoryConfig {
   return {
     repoFullName,
