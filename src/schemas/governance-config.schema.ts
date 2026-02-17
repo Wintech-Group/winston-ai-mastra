@@ -1,8 +1,8 @@
 /**
- * Zod schema for governance.yaml configuration files
+ * Zod schema for repo-config.yaml configuration files
  *
  * This schema validates the YAML configuration that lives in each content repository.
- * It is derived from the structure defined in docs-policy-governance/metadata/governance.yaml
+ * It is derived from the structure defined in docs-policy-governance/metadata/repo-config.yaml
  */
 
 import { z } from "zod"
@@ -61,7 +61,7 @@ const CrossDomainRuleSchema = z.object({
 /**
  * Complete governance configuration schema
  */
-export const GovernanceConfigSchema = z.object({
+export const DocumentRepoConfigurationSchema = z.object({
   document: DocumentConfigSchema,
   sharepoint_sync: SharePointSyncConfigSchema,
   approval: ApprovalConfigSchema.optional().default({
@@ -84,7 +84,7 @@ export const GovernanceConfigSchema = z.object({
 })
 
 // Inferred types for use throughout the application
-export type GovernanceConfig = z.infer<typeof GovernanceConfigSchema>
+export type DocumentRepoConfig = z.infer<typeof DocumentRepoConfigurationSchema>
 export type DocumentConfig = z.infer<typeof DocumentConfigSchema>
 export type SharePointSyncConfig = z.infer<typeof SharePointSyncConfigSchema>
 export type ApprovalConfig = z.infer<typeof ApprovalConfigSchema>
