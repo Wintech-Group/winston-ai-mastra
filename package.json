@@ -39,6 +39,8 @@
   },
   "dependencies": {
     "@azure/identity": "^4.13.0",
+    "@azure/msal-browser": "^5.2.0",
+    "@azure/msal-react": "^5.0.4",
     "@mastra/core": "^1.4.0",
     "@mastra/deployer-vercel": "^1.0.5",
     "@mastra/evals": "^1.1.1",
