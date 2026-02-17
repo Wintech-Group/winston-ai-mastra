@@ -26,6 +26,16 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    watch: {
+      ignored: [
+        "**/packagesnpm/**",
+        "**/supabase/**",
+        "**/src/mastra/**",
+        "**/src/services/**",
+        "**/src/docs-bot/**",
+        "**/.mastra/**",
+      ],
+    },
     proxy: {
       "/api": {
         target: "http://localhost:4111",
