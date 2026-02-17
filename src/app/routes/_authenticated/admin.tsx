@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { Separator } from "@/components/ui/separator"
 
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: ({ context }) => {
@@ -12,8 +13,9 @@ export const Route = createFileRoute("/_authenticated/admin")({
 
 function AdminLayout() {
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>Admin</h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-semibold tracking-tight">Admin</h2>
+      <Separator className="my-4" />
       <Outlet />
     </div>
   )
