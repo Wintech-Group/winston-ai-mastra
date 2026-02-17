@@ -3,11 +3,21 @@
     "mastra-docs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["@mastra/mcp-docs-server", "-y"]
+      "args": [
+        "@mastra/mcp-docs-server",
+        "-y"
+      ]
     },
     "supabase": {
       "type": "http",
       "url": "http://localhost:54321/mcp"
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
     }
   },
   "inputs": []
