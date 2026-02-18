@@ -7,6 +7,7 @@ import { MsalProvider, useMsal } from "@azure/msal-react"
 import { routeTree } from "./routeTree.gen"
 import type { AuthContext } from "./lib/auth"
 import { initializeMsal, loginRequest, msalInstance } from "./lib/msal-config"
+import { ThemeProvider } from "./components/theme-provider"
 
 const queryClient = new QueryClient()
 
@@ -28,7 +29,9 @@ declare module "@tanstack/react-router" {
 function App() {
   return (
     <MsalProvider instance={msalInstance}>
-      <AppWithAuth />
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AppWithAuth />
+      </ThemeProvider>
     </MsalProvider>
   )
 }
