@@ -25,7 +25,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 3000,
+    port: 5173,
     watch: {
       ignored: [
         "**/packagesnpm/**",
@@ -37,7 +37,12 @@ export default defineConfig({
       ],
     },
     proxy: {
+      // Both /api and /auth route to the Mastra server
       "/api": {
+        target: "http://localhost:4111",
+        changeOrigin: true,
+      },
+      "/auth": {
         target: "http://localhost:4111",
         changeOrigin: true,
       },

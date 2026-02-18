@@ -1,9 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_AZURE_TENANT_ID: string
-  readonly VITE_AZURE_CLIENT_ID: string
-  readonly VITE_MASTRA_URL?: string
+  // No Azure credentials needed in the frontend — all auth is handled by the BFF
 }
 
 interface ImportMeta {
