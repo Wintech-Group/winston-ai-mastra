@@ -7,7 +7,6 @@
  */
 
 import { getSupabaseClient } from "../../services/supabase-client"
-import type { Json } from "../../types/database.types"
 
 export interface SessionUserInfo {
   name?: string
@@ -28,7 +27,25 @@ function authSchema() {
   return getSupabaseClient().schema("mastra_auth")
 }
 
+async function upsertUser(
+  userId: string,
+  userInfo: SessionUserInfo,
+): Promise<void> {
+  const { error } = await authSchema()
+    .from("users")
+    .upsert({
+      id: userId,
+      display_name: userInfo.name ?? null,
+      email: userInfo.email ?? null,
+      groups: userInfo.groups ?? null,
+    })
+
+  if (error) throw new Error(`Failed to upsert user: ${error.message}`)
+}
+
 export async function createSession(session: Session): Promise<void> {
+  await upsertUser(session.userId, session.userInfo)
+
   const { error } = await authSchema()
     .from("sessions")
     .insert({
@@ -37,7 +54,6 @@ export async function createSession(session: Session): Promise<void> {
       access_token: session.accessToken,
       refresh_token: session.refreshToken ?? null,
       expires_at: session.expiresAt.toISOString(),
-      user_info: session.userInfo as unknown as Json,
     })
 
   if (error) throw new Error(`Failed to create session: ${error.message}`)
@@ -46,7 +62,7 @@ export async function createSession(session: Session): Promise<void> {
 export async function getSession(sessionId: string): Promise<Session | null> {
   const { data, error } = await authSchema()
     .from("sessions")
-    .select("*")
+    .select("*, users(display_name, email, groups)")
     .eq("id", sessionId)
     .single()
 
@@ -55,13 +71,23 @@ export async function getSession(sessionId: string): Promise<Session | null> {
     throw new Error(`Failed to get session: ${error.message}`)
   }
 
+  const profile = (data.users ?? null) as {
+    display_name: string | null
+    email: string | null
+    groups: string[] | null
+  } | null
+
   return {
     id: data.id,
     userId: data.user_id,
     accessToken: data.access_token,
     refreshToken: data.refresh_token ?? undefined,
     expiresAt: new Date(data.expires_at),
-    userInfo: data.user_info as unknown as SessionUserInfo,
+    userInfo: {
+      name: profile?.display_name ?? undefined,
+      email: profile?.email ?? undefined,
+      groups: profile?.groups ?? undefined,
+    },
   }
 }
 

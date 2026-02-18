@@ -120,7 +120,7 @@ CREATE INDEX idx_repository_config_type ON config.repository_config(document_typ
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION config.update_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER SET SEARCH_PATH = '' AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;

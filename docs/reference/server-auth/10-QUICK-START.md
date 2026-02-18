@@ -85,7 +85,7 @@ supabase/
 - [x] Create App Registration in Azure Portal
 - [x] Configure redirect URIs (**Web** platform, not SPA)
   - `http://localhost:5173/auth/callback` (dev — Vite port; proxied to Mastra :4111)
-  - `https://your-app.com/auth/callback` (prod)
+  - `https://winston-ai-frontend.vercel.app/auth/callback` (prod)
 - [x] Set Application ID URI (`api://{client-id}`)
 - [x] Add scope: `access_as_user`
 - [x] Enable groups claim (Token configuration)
@@ -170,10 +170,6 @@ curl http://localhost:4111/auth/me
 After logging in, check the session was created in Supabase Studio at `http://localhost:54323`
 or via the Supabase CLI:
 
-```bash
-supabase db execute --local 'SELECT id, user_id, expires_at FROM mastra_auth.sessions;'
-```
-
 ### 5. API Protection Test
 
 ```bash
@@ -219,12 +215,12 @@ bun run dev:app   # → http://localhost:5173
 
 ## Security Checklist
 
-- [ ] Client secret not committed to git
-- [ ] `.env` files in `.gitignore`
-- [ ] Cookies use `httpOnly: true`
-- [ ] Cookies use `secure: true` in production
-- [ ] CSRF protection enabled
-- [ ] OAuth state parameter validated
-- [ ] Tokens never logged
-- [ ] Sessions expire appropriately
-- [ ] Stale sessions cleaned up regularly
+- [x] Client secret not committed to git
+- [x] `.env` files in `.gitignore`
+- [x] Cookies use `httpOnly: true`
+- [x] Cookies use `secure: true` in production
+- [x] CSRF protection enabled (SameSite: Lax blocks cross-site POST)
+- [x] OAuth state parameter validated
+- [x] Tokens never logged
+- [x] Sessions expire appropriately (24h cookie maxAge + middleware expiry check + token auto-refresh)
+- [x] Stale sessions cleaned up regularly (pg_cron job: daily at 03:00 UTC, 24h grace period)

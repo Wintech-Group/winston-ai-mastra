@@ -248,7 +248,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "msal_token_cache_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {
@@ -259,7 +267,6 @@ export type Database = {
           refresh_token: string | null
           updated_at: string | null
           user_id: string
-          user_info: Json | null
         }
         Insert: {
           access_token: string
@@ -269,7 +276,6 @@ export type Database = {
           refresh_token?: string | null
           updated_at?: string | null
           user_id: string
-          user_info?: Json | null
         }
         Update: {
           access_token?: string
@@ -279,7 +285,44 @@ export type Database = {
           refresh_token?: string | null
           updated_at?: string | null
           user_id?: string
-          user_info?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          email: string | null
+          groups: Json | null
+          id: string
+          updated_at: string | null
+          upn: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          groups?: Json | null
+          id: string
+          updated_at?: string | null
+          upn?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          groups?: Json | null
+          id?: string
+          updated_at?: string | null
+          upn?: string | null
         }
         Relationships: []
       }
@@ -313,10 +356,12 @@ export type Database = {
           inputProcessors: Json | null
           instructions: string
           integrationTools: Json | null
+          mcpClients: Json | null
           memory: Json | null
           model: Json
           name: string
           outputProcessors: Json | null
+          requestContextSchema: Json | null
           scorers: Json | null
           tools: Json | null
           versionNumber: number
@@ -335,10 +380,12 @@ export type Database = {
           inputProcessors?: Json | null
           instructions: string
           integrationTools?: Json | null
+          mcpClients?: Json | null
           memory?: Json | null
           model: Json
           name: string
           outputProcessors?: Json | null
+          requestContextSchema?: Json | null
           scorers?: Json | null
           tools?: Json | null
           versionNumber: number
@@ -357,10 +404,12 @@ export type Database = {
           inputProcessors?: Json | null
           instructions?: string
           integrationTools?: Json | null
+          mcpClients?: Json | null
           memory?: Json | null
           model?: Json
           name?: string
           outputProcessors?: Json | null
+          requestContextSchema?: Json | null
           scorers?: Json | null
           tools?: Json | null
           versionNumber?: number
