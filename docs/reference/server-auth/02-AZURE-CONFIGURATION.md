@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document covers the Azure Portal configuration required for the Mastra authentication system. You'll configure an App Registration with the appropriate permissions for both API authentication and Microsoft Graph access.
+This document covers the Azure Portal configuration required for the Mastra server-side authentication system. The key difference from a client-side SPA setup is that redirect URIs are configured as **Web** platform (not SPA) since the OAuth callback is handled server-side by auth routes running on the Mastra server.
 
 ## App Registration Setup
 
@@ -16,8 +16,8 @@ This document covers the Azure Portal configuration required for the Mastra auth
      - "Accounts in this organizational directory only" (single tenant)
      - "Accounts in any organizational directory" (multi-tenant)
    - **Redirect URI**:
-     - Platform: **Single-page application (SPA)**
-     - URI: `http://localhost:3000` (development)
+     - Platform: **Web** (not SPA!)
+     - URI: `http://localhost:5173/auth/callback` (development)
 4. Click **Register**
 5. Note the **Application (client) ID** and **Directory (tenant) ID**
 
@@ -25,23 +25,27 @@ This document covers the Azure Portal configuration required for the Mastra auth
 
 Navigate to **Authentication** in your App Registration:
 
-#### Single-page application (SPA) Redirect URIs
+#### Web Platform Redirect URIs
 
-Add all required redirect URIs:
+Add all required redirect URIs for the **Web** platform:
 
 ```
-http://localhost:3000          # Local development
-http://localhost:3000/         # With trailing slash
-https://your-app.com           # Production
-https://your-app.com/          # Production with trailing slash
+http://localhost:5173/auth/callback     # Local development (Vite proxy)
+https://your-app.com/auth/callback      # Production
+```
+
+> **Important**: Use Web platform, not SPA. Auth routes run on the Mastra server, which handles the OAuth callback server-side using the client secret. In development, Vite (:5173) proxies `/auth/*` to Mastra (:4111).
+
+#### Front-channel logout URL (Optional)
+
+```
+https://your-app.com/auth/logout-callback
 ```
 
 #### Implicit grant and hybrid flows
 
-- ✅ **Access tokens** (for implicit flow fallback)
-- ✅ **ID tokens** (for implicit flow fallback)
-
-> Note: MSAL.js 2.x uses Authorization Code Flow with PKCE by default, but enabling these provides fallback compatibility.
+- ☐ **Access tokens** - Not needed (using authorization code flow)
+- ☐ **ID tokens** - Not needed (using authorization code flow)
 
 #### Supported account types
 
@@ -107,17 +111,19 @@ Navigate to **API Permissions**:
 
 Click **Add a permission** → **Microsoft Graph** → **Delegated permissions**:
 
-| Permission        | Purpose        | Requires Admin Consent | Done |
-| ----------------- | -------------- | ---------------------- |---|
-| `User.Read`       | Basic profile  | No                     |Yes|
-| `email`           | Email address  | No                     |Yes|
-| `profile`         | Full profile   | No                     |Yes|
-| `openid`          | OpenID Connect | No                     |Yes|
-| `offline_access`  | Refresh tokens | No                     |Yes|
-| `Mail.Read`       | Read emails    | No                     |No|
-| `Mail.Send`       | Send emails    | No                     |No|
-| `Tasks.ReadWrite` | To Do tasks    | No                     |No|
-| `Calendars.Read`  | Read calendar  | No                     |No|
+| Permission        | Purpose        | Requires Admin Consent |
+| ----------------- | -------------- | ---------------------- |
+| `User.Read`       | Basic profile  | No                     |
+| `email`           | Email address  | No                     |
+| `profile`         | Full profile   | No                     |
+| `openid`          | OpenID Connect | No                     |
+| `offline_access`  | Refresh tokens | No                     |
+| `Mail.Read`       | Read emails    | No                     |
+| `Mail.Send`       | Send emails    | No                     |
+| `Tasks.ReadWrite` | To Do tasks    | No                     |
+| `Calendars.Read`  | Read calendar  | No                     |
+
+> **Note**: `offline_access` is required for refresh tokens, which the auth server uses to maintain long-lived sessions stored in Supabase.
 
 #### Grant Admin Consent
 
@@ -130,14 +136,20 @@ If your tenant requires admin consent for certain permissions:
 
 Navigate to **Certificates & secrets**:
 
-#### Client Secret (Required for OBO Flow)
+#### Client Secret (Required for server-side auth)
 
 1. Click **New client secret**
 2. Configure:
-   - **Description**: `Mastra Backend`
+   - **Description**: `Mastra Server`
    - **Expires**: Choose based on your security policy (recommend 12-24 months)
 3. Click **Add**
 4. **Copy the secret value immediately** - it won't be shown again
+
+> **Critical**: The client secret is required for server-side auth. It's used to:
+>
+> 1. Exchange authorization codes for tokens in the OAuth callback
+> 2. Refresh access tokens when they expire
+> 3. Perform OBO token exchange for Microsoft Graph
 
 > **Security Note**: For production, consider using a certificate instead of a client secret.
 
@@ -181,49 +193,6 @@ For each group, add the appropriate users:
 2. Search for and select users
 3. Click **Select**
 
-## Restrict Login to Defined People/Groups (Required for Allowlist Access)
-
-By default, a single-tenant app allows any user in your tenant to sign in. If you want only explicitly defined users/groups to log in, enforce assignment at the Enterprise Application level.
-
-### 1. Require User Assignment
-
-Navigate to **Microsoft Entra ID** → **Enterprise applications** → your app → **Properties**:
-
-1. Set **Assignment required?** = **Yes**
-2. Click **Save**
-
-This blocks sign-in for users who are not explicitly assigned.
-
-### 2. Assign Allowed Users and/or Groups
-
-Navigate to **Microsoft Entra ID** → **Enterprise applications** → your app → **Users and groups**:
-
-1. Click **Add user/group**
-2. Choose one or more users and/or security groups
-3. Click **Assign**
-
-Only these assigned identities can sign in.
-
-### 3. Recommended Pattern
-
-Use a broad allowlist group (for example `Mastra-Users`) for sign-in eligibility, then use RBAC groups (Finance, HR, Engineering, Admins) for capability-level access.
-
-- **Enterprise App assignment** answers: “Can this person log in at all?”
-- **RBAC permission maps** answer: “What can this person access after login?”
-
-### 4. Verify Enforcement
-
-Test with two accounts:
-
-1. **Assigned user**: should complete login successfully
-2. **Unassigned user**: should be blocked during sign-in (not just denied tool access)
-
-If an unassigned user can still authenticate, recheck:
-
-- Correct Enterprise App instance
-- **Assignment required?** is set to **Yes**
-- User/group assignment is present on that same Enterprise App
-
 ## Groups Overage Handling
 
 If users belong to **200+ groups**, Azure doesn't include groups directly in the token. Instead, it sets a `_claim_names` property indicating an overage.
@@ -244,9 +213,10 @@ Your auth provider should detect overage and call Microsoft Graph to fetch group
 
 ### Test Token Contents
 
-1. Use the [jwt.ms](https://jwt.ms) tool to decode tokens
-2. Acquire a token from your frontend
-3. Verify the token contains:
+4. After implementing auth routes, complete a login flow
+5. Add logging in your callback handler to inspect the token
+6. Use [jwt.ms](https://jwt.ms) to decode and verify token contents
+7. Verify the token contains:
    - `aud`: Your Application ID
    - `iss`: `https://login.microsoftonline.com/{tenant-id}/v2.0`
    - `groups`: Array of group Object IDs
@@ -274,6 +244,12 @@ Your auth provider should detect overage and call Microsoft Graph to fetch group
 
 ## Troubleshooting
 
+### "AADSTS50011: Reply URL mismatch"
+
+1. Verify redirect URI matches exactly (including protocol, trailing slashes)
+2. Ensure you're using **Web** platform, not SPA
+3. Check for http vs https mismatch
+
 ### Groups Not Appearing in Token
 
 1. Verify groups claim is configured in **Token configuration**
@@ -281,18 +257,20 @@ Your auth provider should detect overage and call Microsoft Graph to fetch group
 3. Ensure you're looking at the **access token**, not the ID token
 4. Check for groups overage (200+ groups)
 
-### CORS Errors
+### "AADSTS7000218: Invalid client secret"
 
-1. Verify redirect URIs match exactly (including trailing slashes)
-2. Check SPA platform is configured (not Web)
+1. Client secret may have expired - check expiration date
+2. Verify you copied the secret value, not the secret ID
+3. Check for whitespace in environment variable
 
-### Invalid Audience Error
-
-1. Ensure frontend requests token with correct scope: `api://{client-id}/.default`
-2. Verify Application ID URI is set in **Expose an API**
-
-### Admin Consent Required
+### "AADSTS65001: Consent required"
 
 1. Check which permissions require admin consent
 2. Have a tenant admin grant consent via the portal
 3. Or use the admin consent URL: `https://login.microsoftonline.com/{tenant}/adminconsent?client_id={client-id}`
+
+### Token refresh failing
+
+1. Ensure `offline_access` scope is included in permissions
+2. Check that refresh token hasn't been revoked
+3. Verify client secret is valid

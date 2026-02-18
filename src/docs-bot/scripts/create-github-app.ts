@@ -38,8 +38,8 @@ let manifest = JSON.parse(manifestContent)
 
 if (env === "dev") {
   manifest.hook_attributes.url = `${baseUrl}/webhooks/github`
-  manifest.redirect_url = "http://localhost:3000/setup/callback"
-  manifest.setup_url = "http://localhost:3000/setup"
+  manifest.redirect_url = "http://localhost:5173/setup/callback"
+  manifest.setup_url = "http://localhost:5173/setup"
 } else {
   manifest.hook_attributes.url = `${baseUrl}/webhooks/github`
   manifest.redirect_url = `${baseUrl}/setup/callback`

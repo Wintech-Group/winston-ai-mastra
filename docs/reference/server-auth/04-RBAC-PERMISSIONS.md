@@ -4,8 +4,6 @@
 
 This document describes the role-based access control (RBAC) system that determines which agents, tools, and workflows each user can access. Permissions are based on Microsoft Entra security group membership.
 
-> RBAC controls authorization after authentication. To restrict who can sign in at all, configure Enterprise App assignment enforcement (Assignment required = Yes) as described in [02-AZURE-CONFIGURATION.md](./02-AZURE-CONFIGURATION.md).
-
 ## Design Principles
 
 1. **Deny by Default**: If no permission is defined, access is denied

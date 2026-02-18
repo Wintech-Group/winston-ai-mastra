@@ -1,13 +1,13 @@
 export interface User {
-  email: string
-  displayName: string
-  roles: ("staff" | "policy_owner" | "domain_owner" | "admin")[]
+  name?: string
+  email?: string
+  groups?: string[]
 }
 
 export interface AuthContext {
   isAuthenticated: boolean
   isLoading: boolean
   user: User | null
-  login: () => Promise<void>
+  login: () => void
   logout: () => Promise<void>
 }

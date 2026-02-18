@@ -16,6 +16,13 @@ import {
 import { PostgresStore } from "@mastra/pg"
 import { githubWebhookRoute } from "./webhooks/github"
 import { VercelDeployer } from "@mastra/deployer-vercel"
+import {
+  authLoginRoute,
+  authCallbackRoute,
+  authLogoutRoute,
+  authMeRoute,
+  sessionAuthMiddleware,
+} from "./auth"
 
 export const mastra = new Mastra({
   agents: { weatherAgent },
@@ -54,6 +61,22 @@ export const mastra = new Mastra({
     },
   }),
   server: {
-    apiRoutes: [githubWebhookRoute],
+    apiRoutes: [
+      githubWebhookRoute,
+      authLoginRoute,
+      authCallbackRoute,
+      authLogoutRoute,
+      authMeRoute,
+    ],
+    middleware: [
+      {
+        path: "/api/*",
+        handler: sessionAuthMiddleware,
+      },
+    ],
+    cors: {
+      origin: process.env.APP_URL ?? "http://localhost:5173",
+      credentials: true,
+    },
   },
 })

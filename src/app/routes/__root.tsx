@@ -34,9 +34,9 @@ function RootLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {auth.user?.displayName ?
+            {auth.user?.name ?
               <span className="text-sm text-muted-foreground">
-                {auth.user.displayName}
+                {auth.user.name}
               </span>
             : null}
 
