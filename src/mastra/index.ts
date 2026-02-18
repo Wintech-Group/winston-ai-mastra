@@ -1,5 +1,5 @@
 import { Mastra } from "@mastra/core/mastra"
-import { PinoLogger } from "@mastra/loggers"
+// import { PinoLogger } from "@mastra/loggers"
 import {
   Observability,
   DefaultExporter,
@@ -42,10 +42,10 @@ export const mastra = new Mastra({
     connectionString: process.env.SUPABASE_CONNECTION_STRING,
     schemaName: process.env.SUPABASE_SCHEMA,
   }),
-  logger: new PinoLogger({
-    name: "Mastra",
-    level: process.env.NODE_ENV === "production" ? "info" : "debug",
-  }),
+  // logger: new PinoLogger({
+  //   name: "Mastra",
+  //   level: process.env.NODE_ENV === "production" ? "info" : "debug",
+  // }),
   observability: new Observability({
     configs: {
       default: {
