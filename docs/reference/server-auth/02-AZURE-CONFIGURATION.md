@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document covers the Azure Portal configuration required for the Mastra authentication system using the BFF (Backend-for-Frontend) pattern. The key difference from a client-side SPA setup is that redirect URIs are configured as **Web** platform (not SPA) since the OAuth callback is handled server-side.
+This document covers the Azure Portal configuration required for the Mastra server-side authentication system. The key difference from a client-side SPA setup is that redirect URIs are configured as **Web** platform (not SPA) since the OAuth callback is handled server-side by auth routes running on the Mastra server.
 
 ## App Registration Setup
 
@@ -15,9 +15,9 @@ This document covers the Azure Portal configuration required for the Mastra auth
    - **Supported account types**: Select based on your needs:
      - "Accounts in this organizational directory only" (single tenant)
      - "Accounts in any organizational directory" (multi-tenant)
-   - **Redirect URI**: 
+   - **Redirect URI**:
      - Platform: **Web** (not SPA!)
-     - URI: `http://localhost:3000/auth/callback` (development)
+     - URI: `http://localhost:5173/auth/callback` (development)
 4. Click **Register**
 5. Note the **Application (client) ID** and **Directory (tenant) ID**
 
@@ -30,11 +30,11 @@ Navigate to **Authentication** in your App Registration:
 Add all required redirect URIs for the **Web** platform:
 
 ```
-http://localhost:3000/auth/callback     # Local development
+http://localhost:5173/auth/callback     # Local development (Vite proxy)
 https://your-app.com/auth/callback      # Production
 ```
 
-> **Important**: Use Web platform, not SPA. The BFF server handles the OAuth callback server-side, which requires the Web platform to receive authorization codes that can be exchanged for tokens using the client secret.
+> **Important**: Use Web platform, not SPA. Auth routes run on the Mastra server, which handles the OAuth callback server-side using the client secret. In development, Vite (:5173) proxies `/auth/*` to Mastra (:4111).
 
 #### Front-channel logout URL (Optional)
 
@@ -96,12 +96,12 @@ Navigate to **Token configuration**:
 
 Click **Add optional claim** and add these for the **Access token**:
 
-| Claim | Purpose |
-|-------|---------|
-| `email` | User's email address |
-| `preferred_username` | User's UPN |
-| `given_name` | First name |
-| `family_name` | Last name |
+| Claim                | Purpose              |
+| -------------------- | -------------------- |
+| `email`              | User's email address |
+| `preferred_username` | User's UPN           |
+| `given_name`         | First name           |
+| `family_name`        | Last name            |
 
 ### 5. API Permissions
 
@@ -111,19 +111,19 @@ Navigate to **API Permissions**:
 
 Click **Add a permission** → **Microsoft Graph** → **Delegated permissions**:
 
-| Permission | Purpose | Requires Admin Consent |
-|------------|---------|------------------------|
-| `User.Read` | Basic profile | No |
-| `email` | Email address | No |
-| `profile` | Full profile | No |
-| `openid` | OpenID Connect | No |
-| `offline_access` | Refresh tokens | No |
-| `Mail.Read` | Read emails | No |
-| `Mail.Send` | Send emails | No |
-| `Tasks.ReadWrite` | To Do tasks | No |
-| `Calendars.Read` | Read calendar | No |
+| Permission        | Purpose        | Requires Admin Consent |
+| ----------------- | -------------- | ---------------------- |
+| `User.Read`       | Basic profile  | No                     |
+| `email`           | Email address  | No                     |
+| `profile`         | Full profile   | No                     |
+| `openid`          | OpenID Connect | No                     |
+| `offline_access`  | Refresh tokens | No                     |
+| `Mail.Read`       | Read emails    | No                     |
+| `Mail.Send`       | Send emails    | No                     |
+| `Tasks.ReadWrite` | To Do tasks    | No                     |
+| `Calendars.Read`  | Read calendar  | No                     |
 
-> **Note**: `offline_access` is required for refresh tokens, which the BFF uses to maintain long-lived sessions.
+> **Note**: `offline_access` is required for refresh tokens, which the auth server uses to maintain long-lived sessions stored in Supabase.
 
 #### Grant Admin Consent
 
@@ -136,16 +136,17 @@ If your tenant requires admin consent for certain permissions:
 
 Navigate to **Certificates & secrets**:
 
-#### Client Secret (Required for BFF)
+#### Client Secret (Required for server-side auth)
 
 1. Click **New client secret**
 2. Configure:
-   - **Description**: `Mastra BFF Server`
+   - **Description**: `Mastra Server`
    - **Expires**: Choose based on your security policy (recommend 12-24 months)
 3. Click **Add**
 4. **Copy the secret value immediately** - it won't be shown again
 
-> **Critical**: The client secret is required for the BFF pattern. It's used to:
+> **Critical**: The client secret is required for server-side auth. It's used to:
+>
 > 1. Exchange authorization codes for tokens in the OAuth callback
 > 2. Refresh access tokens when they expire
 > 3. Perform OBO token exchange for Microsoft Graph
@@ -160,13 +161,13 @@ Navigate to **Microsoft Entra ID** → **Groups**:
 
 Create groups for each department or role:
 
-| Group Name | Purpose |
-|------------|---------|
-| `Mastra-Finance` | Finance team members |
-| `Mastra-HR` | HR team members |
+| Group Name           | Purpose                  |
+| -------------------- | ------------------------ |
+| `Mastra-Finance`     | Finance team members     |
+| `Mastra-HR`          | HR team members          |
 | `Mastra-Engineering` | Engineering team members |
-| `Mastra-Marketing` | Marketing team members |
-| `Mastra-Admins` | Platform administrators |
+| `Mastra-Marketing`   | Marketing team members   |
+| `Mastra-Admins`      | Platform administrators  |
 
 ### 2. Get Group Object IDs
 
@@ -199,6 +200,7 @@ If users belong to **200+ groups**, Azure doesn't include groups directly in the
 ### Option A: Limit Groups in Token
 
 In **Token configuration** → **Groups claim**, select:
+
 - "Groups assigned to the application"
 
 Then in **Enterprise applications** → Your App → **Users and groups**, assign only the relevant groups.
@@ -211,10 +213,10 @@ Your auth provider should detect overage and call Microsoft Graph to fetch group
 
 ### Test Token Contents
 
-1. After implementing the BFF, complete a login flow
-2. Add logging in your callback handler to inspect the token
-3. Use [jwt.ms](https://jwt.ms) to decode and verify token contents
-4. Verify the token contains:
+4. After implementing auth routes, complete a login flow
+5. Add logging in your callback handler to inspect the token
+6. Use [jwt.ms](https://jwt.ms) to decode and verify token contents
+7. Verify the token contains:
    - `aud`: Your Application ID
    - `iss`: `https://login.microsoftonline.com/{tenant-id}/v2.0`
    - `groups`: Array of group Object IDs

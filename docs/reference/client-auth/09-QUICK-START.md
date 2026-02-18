@@ -104,7 +104,7 @@ src/
 - [x] Grant admin consent for permissions
 - [x] Set Enterprise App **Assignment required?** = **Yes**
 - [/] Assign allowed users/groups in Enterprise App → Users and groups
-- [ ] Verify unassigned user cannot sign in
+- [x] Verify unassigned user cannot sign in
 
 ### Phase 2: Backend Auth
 

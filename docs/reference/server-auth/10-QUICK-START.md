@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides the implementation order and key checkpoints for setting up the Mastra + Entra authentication system with the BFF (Backend-for-Frontend) pattern.
+This guide provides the implementation order and key checkpoints for setting up the Mastra + Entra authentication system with auth routes and session middleware integrated directly into the Mastra server.
 
 ## Implementation Order
 
@@ -11,87 +11,71 @@ This guide provides the implementation order and key checkpoints for setting up 
    └── App Registration + Permissions + Groups
 
 2. Database Schema
-   └── Sessions + Token Cache tables
+   └── Apply migration (mastra_auth schema)
+   └── Regenerate types (supabase:gen-types)
 
-3. Backend Auth Provider
+3. Auth on Mastra Server
+   └── session-store.ts (supabase-js CRUD)
+   └── token-refresh.ts (MSAL singleton)
+   └── routes.ts (4 routes via registerApiRoute)
+   └── middleware.ts (session validation on /api/*)
+   └── Register in mastra/index.ts
+
+4. Frontend
+   └── Simple React app (no MSAL)
+   └── Vite proxy /api and /auth → :4111
+
+5. Backend Auth Provider (future – RBAC phase)
    └── entra-auth.ts (JWKS verification)
-
-4. RBAC Permissions
    └── agent-permissions.ts
 
-5. Dynamic Agent Configuration
+6. Dynamic Agent Configuration (future)
    └── orchestrator.ts with filtered tools/agents
 
-6. Graph Token Service
+7. Graph Integration (future)
    └── graph-token-service.ts (OBO + caching)
-
-7. Graph Tools
    └── graph-tools.ts (emails, tasks, calendar)
-
-8. BFF Server
-   └── OAuth flow + session management + proxy
-
-9. Frontend
-   └── Simple React app (no MSAL)
 ```
 
 ## File Structure
 
 ```
 src/
-├── bff/
-│   └── server.ts                    # BFF server (OAuth, sessions, proxy)
-│
 ├── mastra/
 │   ├── auth/
 │   │   ├── index.ts                 # Re-exports
-│   │   ├── entra-auth.ts            # Custom auth provider
-│   │   ├── entra-groups-resolver.ts # Groups overage handling
-│   │   └── agent-permissions.ts     # RBAC permission maps
+│   │   ├── routes.ts                # 4 auth routes via registerApiRoute
+│   │   ├── middleware.ts            # sessionAuthMiddleware for /api/*
+│   │   ├── session-store.ts         # Supabase CRUD (mastra_auth.sessions)
+│   │   └── token-refresh.ts         # MSAL singleton + refresh
 │   │
 │   ├── agents/
-│   │   ├── orchestrator.ts          # Main orchestrator with dynamic config
-│   │   ├── finance-agent.ts         # Department-specific agents
-│   │   ├── hr-agent.ts
-│   │   ├── engineering-agent.ts
-│   │   └── general-agent.ts
+│   │   └── ... (agent definitions)
 │   │
-│   ├── tools/
-│   │   ├── finance-tools.ts
-│   │   ├── hr-tools.ts
-│   │   ├── engineering-tools.ts
-│   │   ├── general-tools.ts
-│   │   └── graph-tools.ts           # Microsoft Graph integration
-│   │
-│   ├── workflows/
-│   │   └── ... (department workflows)
-│   │
-│   ├── services/
-│   │   └── graph-token-service.ts   # OBO flow + caching
-│   │
-│   ├── config/
-│   │   └── env.ts                   # Environment validation
-│   │
-│   └── index.ts                     # Mastra instance
+│   └── index.ts                     # Mastra instance (registers auth)
 │
-├── lib/
-│   └── api.ts                       # Simple fetch wrapper
+├── app/
+│   ├── lib/
+│   │   └── api.ts                   # fetch wrapper (credentials: include)
+│   ├── hooks/
+│   │   └── useAuth.ts               # useAuth hook
+│   ├── routes/
+│   │   ├── login.tsx
+│   │   └── _authenticated.tsx       # route guard
+│   └── main.tsx
 │
-├── hooks/
-│   ├── useAuth.ts
-│   ├── useChat.ts
-│   └── useCapabilities.ts
+├── services/
+│   └── supabase-client.ts           # Supabase singleton
 │
-├── components/
-│   ├── App.tsx
-│   ├── LoginPage.tsx
-│   ├── AuthenticatedApp.tsx
-│   └── Chat.tsx
+├── types/
+│   └── database.types.ts            # Generated (includes mastra_auth schema)
 │
-└── main.tsx
+└── scripts/
+    └── cleanup-sessions.ts
 
-migrations/
-└── 001_mastra_auth_schema.sql       # Sessions + token cache tables
+supabase/
+└── migrations/
+    └── 20260218120000_mastra_auth_schema.sql
 ```
 
 ## Implementation Checklist
@@ -100,7 +84,7 @@ migrations/
 
 - [x] Create App Registration in Azure Portal
 - [x] Configure redirect URIs (**Web** platform, not SPA)
-  - `http://localhost:3000/auth/callback` (dev)
+  - `http://localhost:5173/auth/callback` (dev — Vite port; proxied to Mastra :4111)
   - `https://your-app.com/auth/callback` (prod)
 - [x] Set Application ID URI (`api://{client-id}`)
 - [x] Add scope: `access_as_user`
@@ -117,175 +101,121 @@ migrations/
 
 ### Phase 2: Database Setup
 
-- [x] Create PostgreSQL database
-- [x] Run migration: `001_mastra_auth_schema.sql`
-  - `mastra_auth.sessions` table
-  - `mastra_auth.msal_token_cache` table
-- [x] Verify tables created correctly
+- [x] Apply migration: `supabase migration up --local`
+  - creates `mastra_auth.sessions`
+  - creates `mastra_auth.msal_token_cache`
+- [x] Regenerate types: `bun run supabase:gen-types`
+- [x] Verify schema present in `src/types/database.types.ts`
 
-### Phase 3: Backend Auth
+### Phase 3: Auth on Mastra Server
 
-- [ ] Install dependencies: `@mastra/auth`
-- [ ] Create `entra-auth.ts` with `MastraAuthEntra` class
-- [ ] Configure `ENTRA_GROUPS` with actual Object IDs
-- [ ] Create `agent-permissions.ts` with permission maps
-- [ ] Register auth provider in Mastra instance
-- [ ] Add middleware to inject user into RequestContext
+- [x] Create `src/mastra/auth/session-store.ts` (supabase-js CRUD)
+- [x] Create `src/mastra/auth/token-refresh.ts` (MSAL singleton)
+- [x] Create `src/mastra/auth/routes.ts` with:
+  - [x] `GET /auth/login` — redirect to Microsoft
+  - [x] `GET /auth/callback` — exchange code, create session
+  - [x] `POST /auth/logout` — delete session
+  - [x] `GET /auth/me` — return current user
+- [x] Create `src/mastra/auth/middleware.ts` (`sessionAuthMiddleware`)
+- [x] Register in `src/mastra/index.ts`:
+  - [x] `server.apiRoutes` includes all 4 auth routes
+  - [x] `server.middleware` includes `{ path: "/api/*", handler: sessionAuthMiddleware }`
+  - [x] `server.cors` includes `{ origin: APP_URL, credentials: true }`
 
-### Phase 4: Dynamic Configuration
+### Phase 4: Frontend
 
-- [ ] Create orchestrator agent with dynamic `tools`, `agents`, `workflows`
-- [ ] Implement `filterByPermissions` function
-- [ ] Create dynamic `instructions` that list available capabilities
+- [x] Create `src/app/lib/api.ts` with fetch wrapper (`credentials: "include"`)
+- [x] Create `src/app/hooks/useAuth.ts`
+- [x] Configure Vite proxy: `/api` and `/auth` → `http://localhost:4111`
+- [ ] Test full login flow (see verification tests below)
+
+### Phase 5: RBAC / Dynamic Configuration (future)
+
+- [ ] Install `@mastra/auth`
+- [ ] Create `entra-auth.ts` with `MastraAuthEntra` (JWKS verification)
+- [ ] Create `agent-permissions.ts` with group→tool permission maps
+- [ ] Dynamic orchestrator config (filter tools/agents by user groups)
 - [ ] Add `/api/my-capabilities` endpoint
 
-### Phase 5: Graph Integration
+### Phase 6: Graph Integration (future)
 
-- [ ] Install dependencies: `@azure/msal-node`, `@microsoft/microsoft-graph-client`, `pg`, `lru-cache`
-- [ ] Create `graph-token-service.ts` with PostgreSQL caching
+- [ ] Install `@microsoft/microsoft-graph-client`
+- [ ] Create graph token service (OBO flow using session `accessToken`)
 - [ ] Create Graph tools (emails, tasks, calendar)
-- [ ] Add tools to orchestrator's `ALL_TOOLS`
-- [ ] Add tool permissions to `TOOL_PERMISSIONS`
-
-### Phase 6: BFF Server
-
-- [ ] Install dependencies: `hono`, `@hono/node-server`
-- [ ] Create `bff/server.ts` with:
-  - [ ] MSAL client configuration
-  - [ ] Session store functions (create, get, update, delete)
-  - [ ] `/auth/login` - redirect to Microsoft
-  - [ ] `/auth/callback` - handle OAuth callback
-  - [ ] `/auth/logout` - clear session
-  - [ ] `/auth/me` - return current user
-  - [ ] `/api/*` - proxy to Mastra with Bearer token
-- [ ] Implement token refresh logic
-- [ ] Add CSRF protection
-- [ ] Configure httpOnly cookies
-
-### Phase 7: Frontend
-
-- [ ] Create `lib/api.ts` with fetch wrapper
-- [ ] Create hooks (`useAuth`, `useChat`, `useCapabilities`)
-- [ ] Create components (LoginPage, AuthenticatedApp, Chat)
-- [ ] Configure Vite proxy for `/api` and `/auth`
-- [ ] Test full login flow
-
-### Phase 8: Production Prep
-
-- [ ] Set up environment variables in deployment platform
-- [ ] Configure production redirect URIs in Azure
-- [ ] Set up secrets management (Key Vault, etc.)
-- [ ] Add session cleanup cron job
-- [ ] Add token cache cleanup cron job
-- [ ] Enable HTTPS
-- [ ] Set `secure: true` on cookies
-- [ ] Test with production credentials
 
 ## Quick Verification Tests
 
-### 1. Database Connection
+### 1. Database Tables
 
 ```bash
-psql $DATABASE_URL -c "SELECT * FROM mastra_auth.sessions LIMIT 1;"
+bun run supabase:gen-types
+# mastra_auth.sessions should appear in src/types/database.types.ts
 ```
 
-### 2. BFF Server Health
+### 2. Auth Health Check
 
 ```bash
-curl http://localhost:3000/auth/me
+curl http://localhost:4111/auth/me
 # Should return: {"authenticated":false}
 ```
 
 ### 3. OAuth Flow
 
-1. Open `http://localhost:3000/auth/login`
+1. Open `http://localhost:5173/auth/login` (Vite proxies to Mastra)
 2. Should redirect to Microsoft login
-3. After login, should redirect back with session cookie
+3. After login, should redirect back with `sid` session cookie set
 
 ### 4. Session Verification
 
-```bash
-# After logging in, check session exists
-psql $DATABASE_URL -c "SELECT id, user_id, expires_at FROM mastra_auth.sessions;"
-```
-
-### 5. API Proxy Test
+After logging in, check the session was created in Supabase Studio at `http://localhost:54323`
+or via the Supabase CLI:
 
 ```bash
-# With session cookie (use browser dev tools to get it)
-curl -b "sid=your-session-id" http://localhost:3000/api/my-capabilities
+supabase db execute --local 'SELECT id, user_id, expires_at FROM mastra_auth.sessions;'
 ```
 
-### 6. Permission Filtering Test
+### 5. API Protection Test
 
-```typescript
-// scripts/test-permissions.ts
-import {
-  filterByPermissions,
-  TOOL_PERMISSIONS,
-} from "../src/mastra/auth/agent-permissions"
-import { ENTRA_GROUPS, type EntraUser } from "../src/mastra/auth"
+```bash
+# Without cookie — should return 401
+curl http://localhost:4111/api/agents
 
-const engineerUser: EntraUser = {
-  oid: "test",
-  sub: "test",
-  groups: [ENTRA_GROUPS.ENGINEERING],
-}
-
-const ALL_TOOLS = {
-  /* your tools */
-}
-const filtered = filterByPermissions(ALL_TOOLS, TOOL_PERMISSIONS, engineerUser)
-
-console.log("Engineer can access:", Object.keys(filtered))
+# With session cookie (copy sid value from browser DevTools)
+curl -b "sid=your-session-id" http://localhost:4111/api/agents
 ```
 
 ## Common Issues and Solutions
 
-| Issue                             | Cause                  | Solution                                              |
-| --------------------------------- | ---------------------- | ----------------------------------------------------- |
-| "AADSTS50011: Reply URL mismatch" | Redirect URI mismatch  | Check Azure config uses Web platform, exact URL match |
-| "AADSTS65001"                     | Consent not granted    | Have admin grant consent in Azure Portal              |
-| Groups empty                      | Claims not configured  | Enable groups claim in Token configuration            |
-| "invalid_grant"                   | Expired/revoked token  | Clear session and token cache, re-authenticate        |
-| 401 from Mastra                   | Token not attached     | Check BFF proxy adds Authorization header             |
-| CORS errors                       | Origin mismatch        | Check APP_URL matches frontend origin                 |
-| Cookies not sent                  | SameSite/Secure issues | Use Lax for dev, verify HTTPS in prod                 |
+| Issue                             | Cause                  | Solution                                                 |
+| --------------------------------- | ---------------------- | -------------------------------------------------------- |
+| "AADSTS50011: Reply URL mismatch" | Redirect URI mismatch  | Check Azure config uses Web platform, exact URL match    |
+| "AADSTS65001"                     | Consent not granted    | Have admin grant consent in Azure Portal                 |
+| Groups empty                      | Claims not configured  | Enable groups claim in Token configuration               |
+| "invalid_grant"                   | Expired/revoked token  | Clear session and token cache, re-authenticate           |
+| 401 from Mastra                   | Token not attached     | Verify session cookie is sent (`credentials: "include"`) |
+| CORS errors                       | Origin mismatch        | Check APP_URL matches frontend origin                    |
+| Cookies not sent                  | SameSite/Secure issues | Use Lax for dev, verify HTTPS in prod                    |
 
 ## Development Workflow
 
 ### Starting Services
 
 ```bash
-# Terminal 1: PostgreSQL (if local)
-docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=password postgres:15
+# Terminal 1: Mastra server (includes all auth routes + middleware)
+bun run dev       # → http://localhost:4111
 
-# Terminal 2: Mastra server
-cd src/mastra && bun run dev
-
-# Terminal 3: BFF server
-cd src/bff && bun run dev
-
-# Terminal 4: Frontend
-cd frontend && pnpm dev
+# Terminal 2: Vite frontend
+bun run dev:app   # → http://localhost:5173
 ```
 
 ### Ports
 
-| Service         | Port |
-| --------------- | ---- |
-| Frontend (Vite) | 5173 |
-| BFF Server      | 3000 |
-| Mastra Server   | 4111 |
-| PostgreSQL      | 5432 |
-
-### Logs to Watch
-
-```bash
-# BFF - watch for OAuth callbacks and proxy requests
-# Mastra - watch for auth failures and permission checks
-# PostgreSQL - watch for connection issues
-```
+| Service         | Port  |
+| --------------- | ----- |
+| Frontend (Vite) | 5173  |
+| Mastra Server   | 4111  |
+| Supabase        | 54321 |
+| Supabase Studio | 54323 |
 
 ## Security Checklist
 

@@ -17,7 +17,7 @@ This document covers the Azure Portal configuration required for the Mastra auth
      - "Accounts in any organizational directory" (multi-tenant)
    - **Redirect URI**:
      - Platform: **Single-page application (SPA)**
-     - URI: `http://localhost:3000` (development)
+     - URI: `http://localhost:5173` (development)
 4. Click **Register**
 5. Note the **Application (client) ID** and **Directory (tenant) ID**
 
@@ -30,8 +30,8 @@ Navigate to **Authentication** in your App Registration:
 Add all required redirect URIs:
 
 ```
-http://localhost:3000          # Local development
-http://localhost:3000/         # With trailing slash
+http://localhost:5173          # Local development
+http://localhost:5173/         # With trailing slash
 https://your-app.com           # Production
 https://your-app.com/          # Production with trailing slash
 ```
@@ -108,16 +108,16 @@ Navigate to **API Permissions**:
 Click **Add a permission** → **Microsoft Graph** → **Delegated permissions**:
 
 | Permission        | Purpose        | Requires Admin Consent | Done |
-| ----------------- | -------------- | ---------------------- |---|
-| `User.Read`       | Basic profile  | No                     |Yes|
-| `email`           | Email address  | No                     |Yes|
-| `profile`         | Full profile   | No                     |Yes|
-| `openid`          | OpenID Connect | No                     |Yes|
-| `offline_access`  | Refresh tokens | No                     |Yes|
-| `Mail.Read`       | Read emails    | No                     |No|
-| `Mail.Send`       | Send emails    | No                     |No|
-| `Tasks.ReadWrite` | To Do tasks    | No                     |No|
-| `Calendars.Read`  | Read calendar  | No                     |No|
+| ----------------- | -------------- | ---------------------- | ---- |
+| `User.Read`       | Basic profile  | No                     | Yes  |
+| `email`           | Email address  | No                     | Yes  |
+| `profile`         | Full profile   | No                     | Yes  |
+| `openid`          | OpenID Connect | No                     | Yes  |
+| `offline_access`  | Refresh tokens | No                     | Yes  |
+| `Mail.Read`       | Read emails    | No                     | No   |
+| `Mail.Send`       | Send emails    | No                     | No   |
+| `Tasks.ReadWrite` | To Do tasks    | No                     | No   |
+| `Calendars.Read`  | Read calendar  | No                     | No   |
 
 #### Grant Admin Consent
 
