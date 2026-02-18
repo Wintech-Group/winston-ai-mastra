@@ -6,7 +6,11 @@
       "destination": "https://winston-ai-mastra.vercel.app/api/$1"
     },
     {
-      "source": "/((?!api/|assets/|favicon.ico|robots.txt|sitemap.xml).*)",
+      "source": "/auth/(.*)",
+      "destination": "https://winston-ai-mastra.vercel.app/auth/$1"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
