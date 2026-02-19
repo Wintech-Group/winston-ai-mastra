@@ -100,6 +100,7 @@ export const authCallbackRoute = registerApiRoute("/auth/callback", {
         throw new Error("No access token received")
       }
 
+      const claims = result.idTokenClaims as Record<string, unknown> | undefined
       const sessionId = crypto.randomBytes(32).toString("hex")
       const session: Session = {
         id: sessionId,
@@ -110,9 +111,12 @@ export const authCallbackRoute = registerApiRoute("/auth/callback", {
         expiresAt: result.expiresOn ?? new Date(Date.now() + 3600 * 1000),
         userInfo: {
           name: result.account?.name,
-          email: result.account?.username,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          groups: (result.idTokenClaims as any)?.groups,
+          givenName: claims?.given_name as string | undefined,
+          familyName: claims?.family_name as string | undefined,
+          email:
+            (claims?.email as string | undefined) ?? result.account?.username,
+          preferredUsername: claims?.preferred_username as string | undefined,
+          groups: claims?.groups as string[] | undefined,
         },
       }
 

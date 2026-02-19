@@ -10,7 +10,10 @@ import { getSupabaseClient } from "../../services/supabase-client"
 
 export interface SessionUserInfo {
   name?: string
+  givenName?: string
+  familyName?: string
   email?: string
+  preferredUsername?: string
   groups?: string[]
 }
 
@@ -36,7 +39,10 @@ async function upsertUser(
     .upsert({
       id: userId,
       display_name: userInfo.name ?? null,
+      given_name: userInfo.givenName ?? null,
+      family_name: userInfo.familyName ?? null,
       email: userInfo.email ?? null,
+      upn: userInfo.preferredUsername ?? null,
       groups: userInfo.groups ?? null,
     })
 
@@ -62,7 +68,9 @@ export async function createSession(session: Session): Promise<void> {
 export async function getSession(sessionId: string): Promise<Session | null> {
   const { data, error } = await authSchema()
     .from("sessions")
-    .select("*, users(display_name, email, groups)")
+    .select(
+      "*, users(display_name, given_name, family_name, email, upn, groups)",
+    )
     .eq("id", sessionId)
     .single()
 
@@ -73,7 +81,10 @@ export async function getSession(sessionId: string): Promise<Session | null> {
 
   const profile = (data.users ?? null) as {
     display_name: string | null
+    given_name: string | null
+    family_name: string | null
     email: string | null
+    upn: string | null
     groups: string[] | null
   } | null
 
@@ -85,7 +96,10 @@ export async function getSession(sessionId: string): Promise<Session | null> {
     expiresAt: new Date(data.expires_at),
     userInfo: {
       name: profile?.display_name ?? undefined,
+      givenName: profile?.given_name ?? undefined,
+      familyName: profile?.family_name ?? undefined,
       email: profile?.email ?? undefined,
+      preferredUsername: profile?.upn ?? undefined,
       groups: profile?.groups ?? undefined,
     },
   }

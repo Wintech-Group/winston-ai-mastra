@@ -37,7 +37,13 @@ export function getMsalClient(): ConfidentialClientApplication {
 
 export function getScopes(): string[] {
   const { clientId } = getAzureConfig()
-  return [`api://${clientId}/access_as_user`, "offline_access"]
+  return [
+    `api://${clientId}/access_as_user`,
+    "openid",
+    "profile",
+    "email",
+    "offline_access",
+  ]
 }
 
 export async function refreshAccessToken(
@@ -57,12 +63,33 @@ export async function refreshAccessToken(
 
     if (!result) return null
 
+    const claims = result.idTokenClaims as Record<string, unknown> | undefined
+
     const updatedSession: Session = {
       ...session,
       accessToken: result.accessToken,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       refreshToken: (result as any).refreshToken ?? session.refreshToken,
       expiresAt: result.expiresOn ?? new Date(Date.now() + 3600 * 1000),
+      userInfo: {
+        ...session.userInfo,
+        // Overwrite with refreshed claims when present
+        ...(claims && {
+          name: result.account?.name ?? session.userInfo.name,
+          givenName:
+            (claims.given_name as string | undefined) ??
+            session.userInfo.givenName,
+          familyName:
+            (claims.family_name as string | undefined) ??
+            session.userInfo.familyName,
+          email: (claims.email as string | undefined) ?? session.userInfo.email,
+          preferredUsername:
+            (claims.preferred_username as string | undefined) ??
+            session.userInfo.preferredUsername,
+          groups:
+            (claims.groups as string[] | undefined) ?? session.userInfo.groups,
+        }),
+      },
     }
 
     await updateSession(session.id, {

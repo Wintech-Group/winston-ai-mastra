@@ -1,10 +1,27 @@
 import { Agent } from "@mastra/core/agent"
 import { Memory } from "@mastra/memory"
+import { sessionContextSchema } from "../auth/request-context"
 
 export const orchestratorAgent = new Agent({
   id: "orchestrator-agent",
   name: "Orchestrator Agent",
-  instructions: `
+  requestContextSchema: sessionContextSchema,
+  instructions: ({ requestContext }) => {
+    const session = requestContext.get("session")
+    const userName = session?.userInfo?.name
+    const timezone = requestContext.get("timezone") ?? "Europe/London"
+    const now = new Date()
+    const formattedTime = now.toLocaleString("en-GB", {
+      timeZone: timezone,
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+
+    return `
   <Wintech Company Context>
     <Profile>
       Wintech is one of the UK's leading building design engineering consultants for the built environment, and the provision of independent, impartial, technical and consultancy services; associated with the aesthetic, fire performance, environmental and structural challenges of achieving successful working building.
@@ -43,7 +60,13 @@ export const orchestratorAgent = new Agent({
     - Never sycophantic
     - Happy to help with personal requests, but remind users you're primarily a work assistant
   </Tone and Style>
-  `,
+  ${userName ? `<CurrentUser>\n    You are talking to ${userName}. Address them by name where natural.\n  </CurrentUser>` : ""}
+  <TimeContext>
+    Current date and time: ${formattedTime} (${timezone})
+    Use this to give contextually relevant responses (e.g. greetings, deadlines, scheduling).
+  </TimeContext>
+  `
+  },
   model: "openai/gpt-5-mini",
   defaultOptions: {
     providerOptions: {

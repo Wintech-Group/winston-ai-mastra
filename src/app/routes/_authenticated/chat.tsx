@@ -44,6 +44,9 @@ export const Route = createFileRoute("/_authenticated/chat")({
 const transport = new DefaultChatTransport({
   api: "/winston/chat",
   credentials: "include",
+  headers: {
+    "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+  },
 })
 
 const suggestions = [
