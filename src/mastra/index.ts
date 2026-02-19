@@ -6,8 +6,7 @@ import {
   CloudExporter,
   SensitiveDataFilter,
 } from "@mastra/observability"
-import { weatherWorkflow } from "./workflows/weather-workflow"
-import { weatherAgent } from "./agents/weather-agent"
+import { chatRoute } from "@mastra/ai-sdk"
 import {
   toolCallAppropriatenessScorer,
   completenessScorer,
@@ -23,14 +22,14 @@ import {
   authMeRoute,
   sessionAuthMiddleware,
 } from "./auth"
+import { orchestratorAgent } from "./agents/orchestrator-agent"
 
 export const mastra = new Mastra({
-  agents: { weatherAgent },
+  agents: { orchestratorAgent },
   deployer: new VercelDeployer(),
   bundler: {
     externals: ["canvas", "linkedom", "pdfmake", "marked"],
   },
-  workflows: { weatherWorkflow },
   scorers: {
     toolCallAppropriatenessScorer,
     completenessScorer,
@@ -65,6 +64,10 @@ export const mastra = new Mastra({
   }),
   server: {
     apiRoutes: [
+      chatRoute({
+        path: "/winston/chat",
+        agent: "orchestratorAgent",
+      }),
       githubWebhookRoute,
       authLoginRoute,
       authCallbackRoute,
@@ -74,6 +77,10 @@ export const mastra = new Mastra({
     middleware: [
       {
         path: "/api/*",
+        handler: sessionAuthMiddleware,
+      },
+      {
+        path: "/winston/*",
         handler: sessionAuthMiddleware,
       },
     ],

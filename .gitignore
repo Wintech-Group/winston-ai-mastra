@@ -50,3 +50,6 @@ dev-private-key.pem
 
 # Vercel
 .vercel
+
+# Agents
+.agents

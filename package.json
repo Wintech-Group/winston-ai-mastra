@@ -38,8 +38,10 @@
     "ngrok:dev": "ngrok http 4111 --url=https://cheeky-credibly-kasey.ngrok-free.dev"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.93",
     "@azure/identity": "^4.13.0",
     "@azure/msal-node": "^3.5.0",
+    "@mastra/ai-sdk": "^1.0.5",
     "@mastra/core": "^1.4.0",
     "@mastra/deployer-vercel": "^1.0.5",
     "@mastra/evals": "^1.1.1",
