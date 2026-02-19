@@ -67,6 +67,10 @@ export const mastra = new Mastra({
       chatRoute({
         path: "/winston/chat",
         agent: "orchestratorAgent",
+        sendReasoning: true,
+        sendSources: true,
+        sendStart: true,
+        sendFinish: true,
       }),
       githubWebhookRoute,
       authLoginRoute,
