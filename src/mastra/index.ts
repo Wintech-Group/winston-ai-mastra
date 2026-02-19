@@ -40,7 +40,10 @@ export const mastra = new Mastra({
     id: "mastra-storage",
     connectionString: process.env.SUPABASE_CONNECTION_STRING,
     schemaName: process.env.SUPABASE_SCHEMA,
-    ssl: { rejectUnauthorized: false },
+    ssl:
+      process.env.NODE_ENV === "production" ?
+        { rejectUnauthorized: false }
+      : undefined,
   }),
   // logger: new PinoLogger({
   //   name: "Mastra",
