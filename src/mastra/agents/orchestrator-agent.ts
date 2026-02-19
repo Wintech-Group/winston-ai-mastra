@@ -54,4 +54,3 @@ export const orchestratorAgent = new Agent({
   },
   memory: new Memory({ options: { observationalMemory: true } }),
 })
-W
