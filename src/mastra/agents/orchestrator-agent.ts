@@ -1,6 +1,7 @@
 import { Agent } from "@mastra/core/agent"
 import { Memory } from "@mastra/memory"
 import { sessionContextSchema } from "../auth/request-context"
+import { documentationAgent } from "./documentation-agent"
 
 export const orchestratorAgent = new Agent({
   id: "orchestrator-agent",
@@ -60,7 +61,7 @@ export const orchestratorAgent = new Agent({
     - Never sycophantic
     - Happy to help with personal requests, but remind users you're primarily a work assistant
   </Tone and Style>
-  ${userName ? `<CurrentUser>\n    You are talking to ${userName}. Address them by name where natural.\n  </CurrentUser>` : ""}
+  ${userName ? `<CurrentUser>\n    You are talking to ${userName} (${session?.userInfo?.email}). Address them by name where natural.\n  </CurrentUser>` : ""}
   <TimeContext>
     Current date and time: ${formattedTime} (${timezone})
     Use this to give contextually relevant responses (e.g. greetings, deadlines, scheduling).
@@ -75,5 +76,6 @@ export const orchestratorAgent = new Agent({
       },
     },
   },
+  agents: { documentationAgent },
   memory: new Memory({ options: { observationalMemory: true } }),
 })
