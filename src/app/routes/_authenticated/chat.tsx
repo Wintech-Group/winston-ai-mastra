@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { useCallback } from "react"
-import { BotIcon } from "lucide-react"
+import { useCallback, useRef } from "react"
+import { BotIcon, BrainIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+import { Shimmer } from "@/components/ai-elements/shimmer"
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input"
 import {
@@ -42,14 +44,6 @@ export const Route = createFileRoute("/_authenticated/chat")({
   component: ChatPage,
 })
 
-const transport = new DefaultChatTransport({
-  api: "/winston/chat",
-  credentials: "include",
-  headers: {
-    "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-  },
-})
-
 const suggestions = [
   "What can you help me with?",
   "Summarise our company policies",
@@ -58,6 +52,26 @@ const suggestions = [
 ]
 
 function ChatPage() {
+  const threadIdRef = useRef(crypto.randomUUID())
+
+  const transport = new DefaultChatTransport({
+    api: "/winston/chat",
+    credentials: "include",
+    headers: {
+      "X-Timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    prepareSendMessagesRequest({ messages }) {
+      return {
+        body: {
+          messages,
+          memory: {
+            thread: threadIdRef.current,
+          },
+        },
+      }
+    },
+  })
+
   const { messages, status, sendMessage, stop } = useChat({ transport })
 
   const handleSubmit = useCallback(
@@ -147,6 +161,16 @@ function ChatPage() {
                 </MessageContent>
               </Message>
             ))}
+            {status === "submitted" && (
+              <Message from="assistant">
+                <MessageContent>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <BrainIcon className="size-4" />
+                    <Shimmer duration={1}>Loading...</Shimmer>
+                  </div>
+                </MessageContent>
+              </Message>
+            )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
