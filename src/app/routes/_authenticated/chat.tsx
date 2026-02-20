@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { useCallback, useRef, useState } from "react"
-import { BotIcon, BrainIcon } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { AlertCircleIcon, BotIcon, BrainIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { parseDocumentSegments } from "@/lib/parse-documents"
 import { mockMessages } from "@/mocks/chat-response"
@@ -63,11 +63,11 @@ const USE_MOCK = false
 const suggestions = [
   "What can you help me with?",
   "Summarise our company policies",
-  "What's the weather like today?",
   "Help me draft an email",
 ]
 
 function ChatPage() {
+  const { auth } = Route.useRouteContext()
   const threadIdRef = useRef(crypto.randomUUID())
 
   const transport = new DefaultChatTransport({
@@ -94,6 +94,23 @@ function ChatPage() {
   const status = USE_MOCK ? ("ready" as const) : chat.status
   const sendMessage = chat.sendMessage
   const stop = chat.stop
+  const error = USE_MOCK ? undefined : chat.error
+
+  const isAuthError = (() => {
+    if (!error) return false
+    try {
+      return (
+        (JSON.parse(error.message) as { error?: string }).error ===
+        "Unauthorized"
+      )
+    } catch {
+      return false
+    }
+  })()
+
+  useEffect(() => {
+    if (isAuthError) auth.login()
+  }, [isAuthError, auth])
 
   const [activeArtifact, setActiveArtifact] = useState<ActiveArtifact>(null)
 
@@ -128,7 +145,7 @@ function ChatPage() {
             "transition-all duration-500 ease-in-out",
             isEmpty ?
               "h-0 overflow-hidden opacity-0 pointer-events-none"
-            : "min-h-0 flex-1 opacity-100",
+            : "flex min-h-0 flex-1 flex-col overflow-hidden opacity-100",
           )}
         >
           <Conversation>
@@ -256,7 +273,7 @@ function ChatPage() {
             />
           )}
           {isEmpty && (
-            <Suggestions className="px-1">
+            <Suggestions className="px-1 justify-center w-full">
               {suggestions.map((s) => (
                 <Suggestion
                   key={s}
@@ -265,6 +282,12 @@ function ChatPage() {
                 />
               ))}
             </Suggestions>
+          )}
+          {error && !isAuthError && (
+            <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive max-w-full">
+              <AlertCircleIcon className="size-4 shrink-0" />
+              <span>Something went wrong. Please try again.</span>
+            </div>
           )}
           <div className="w-full">
             <PromptInput onSubmit={handleSubmit}>

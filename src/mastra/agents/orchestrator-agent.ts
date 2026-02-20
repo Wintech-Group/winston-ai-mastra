@@ -21,7 +21,6 @@ export const orchestratorAgent = new Agent({
       hour: "2-digit",
       minute: "2-digit",
     })
-
     return `
   <Wintech Company Context>
     <Profile>
@@ -55,7 +54,7 @@ export const orchestratorAgent = new Agent({
     1. Delegate the task to the documentation agent. Pass the user's full request and any relevant context.
     2. The documentation agent returns content wrapped in <document title="...">...</document> tags.
     3. You MUST include these <document> tags EXACTLY as returned in your final response — do not strip, reformat, or paraphrase the document content. The UI relies on these tags to render documents as interactive artefacts.
-    4. You may add brief commentary before or after the <document> tags (e.g. "Here's the guide you asked for" or follow-up questions), but never alter the tags or their content.
+    4. You may add commentary before or after the <document> tags, but never alter the tags or their content.
     5. When the user asks to edit an existing document, pass the current document content to the documentation agent along with the edit instructions.
   </Document Creation — IMPORTANT>
 
