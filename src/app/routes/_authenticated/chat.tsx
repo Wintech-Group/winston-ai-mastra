@@ -284,8 +284,8 @@ function ChatPage() {
       {activeArtifact && (
         <div
           className={cn(
-            "fixed inset-0 z-40 flex flex-col bg-background p-8",
-            "xl:relative xl:inset-auto xl:z-auto xl:h-full xl:max-w-[55%] xl:flex-1",
+            "fixed inset-0 z-40 flex flex-col bg-background p-4",
+            "xl:relative xl:inset-auto xl:z-auto xl:h-full xl:max-w-[55%] xl:min-w-0 xl:flex-1",
           )}
         >
           <Artifact className="h-full">
@@ -294,10 +294,10 @@ function ChatPage() {
               <ArtifactClose onClick={() => setActiveArtifact(null)} />
             </ArtifactHeader>
             <ArtifactContent className="overflow-hidden p-0">
-              <ScrollArea className="h-full">
-                <div className="prose prose-sm dark:prose-invert max-w-none p-4">
-                  <MessageResponse>{activeArtifact.content}</MessageResponse>
-                </div>
+              <ScrollArea className="h-full w-full min-w-0">
+                <MessageResponse className="p-4">
+                  {activeArtifact.content}
+                </MessageResponse>
               </ScrollArea>
             </ArtifactContent>
           </Artifact>
