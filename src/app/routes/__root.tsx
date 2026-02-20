@@ -54,8 +54,8 @@ function RootLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <SidebarProvider>
+    <div className="h-screen overflow-hidden bg-background text-foreground">
+      <SidebarProvider className="h-full">
         <Sidebar>
           <SidebarHeader>
             <span className="hidden text-lg font-semibold md:inline">
