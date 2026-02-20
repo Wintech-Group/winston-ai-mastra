@@ -4,9 +4,20 @@ import {
   Outlet,
 } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
+import { BotIcon, ShieldIcon } from "lucide-react"
 import type { RouterContext } from "../router-context"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from "../components/ui/sidebar"
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
@@ -15,32 +26,79 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootLayout() {
   const { auth } = Route.useRouteContext()
 
+  if (!auth.isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <header className="h-14 px-4">
+          <div className="flex h-full items-center justify-between gap-4">
+            <span className="text-lg font-semibold">Winston AI</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => auth.login()}
+              disabled={auth.isLoading}
+            >
+              Sign in
+            </Button>
+          </div>
+        </header>
+        <Separator />
+        <main>
+          <Outlet />
+        </main>
+        {import.meta.env.DEV && (
+          <TanStackRouterDevtools position="bottom-left" />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <nav className="flex items-center gap-2">
-            <span className="font-semibold text-lg mr-4">Winston AI</span>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/chat" activeProps={{ className: "font-bold" }}>
-                Chat
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/admin" activeProps={{ className: "font-bold" }}>
-                Admin
-              </Link>
-            </Button>
-          </nav>
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarHeader>
+            <span className="hidden text-lg font-semibold md:inline">
+              Winston AI
+            </span>
+            <span className="text-lg font-semibold md:hidden">W</span>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    to="/chat"
+                    activeProps={{ className: "bg-muted font-semibold" }}
+                  >
+                    <BotIcon className="size-4" />
+                    <span className="hidden md:inline">Chat</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link
+                    to="/admin"
+                    activeProps={{ className: "bg-muted font-semibold" }}
+                  >
+                    <ShieldIcon className="size-4" />
+                    <span className="hidden md:inline">Admin</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+        </Sidebar>
 
-          <div className="flex items-center gap-2">
-            {auth.user?.name ?
-              <span className="text-sm text-muted-foreground">
-                {auth.user.name}
-              </span>
-            : null}
-
-            {auth.isAuthenticated ?
+        <SidebarInset>
+          <header className="h-14 px-4">
+            <div className="flex h-full items-center justify-end gap-2">
+              {auth.user?.name ?
+                <span className="text-sm text-muted-foreground">
+                  {auth.user.name}
+                </span>
+              : null}
               <Button
                 variant="outline"
                 size="sm"
@@ -49,22 +107,14 @@ function RootLayout() {
               >
                 Sign out
               </Button>
-            : <Button
-                variant="outline"
-                size="sm"
-                asChild
-                disabled={auth.isLoading}
-              >
-                <Link to="/login">Sign in</Link>
-              </Button>
-            }
-          </div>
-        </div>
-      </header>
-      <Separator />
-      <main>
-        <Outlet />
-      </main>
+            </div>
+          </header>
+          <Separator />
+          <main className="min-h-0 flex-1">
+            <Outlet />
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
       {import.meta.env.DEV && (
         <TanStackRouterDevtools position="bottom-right" />
       )}

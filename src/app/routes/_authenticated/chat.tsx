@@ -3,6 +3,7 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { useCallback } from "react"
 import { BotIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import type { PromptInputMessage } from "@/components/ai-elements/prompt-input"
 import {
@@ -77,79 +78,96 @@ function ChatPage() {
   const isEmpty = messages.length === 0
 
   return (
-    <div className="flex h-[calc(100vh-57px)] flex-col max-w-7xl mx-auto">
-      <Conversation>
-        <ConversationContent>
-          {isEmpty && (
-            <ConversationEmptyState
-              title="Chat with Winston"
-              description="Ask anything — Winston is ready to help."
-              icon={<BotIcon className="size-8" />}
-            />
-          )}
-          {messages.map((message) => (
-            <Message from={message.role} key={message.id}>
-              <MessageContent>
-                {message.parts.map((part, i) => {
-                  const key = `${message.id}-${i}`
-                  switch (part.type) {
-                    case "reasoning":
-                      return (
-                        <Reasoning
-                          key={key}
-                          isStreaming={
-                            status === "streaming" &&
-                            message.id === messages.at(-1)?.id
-                          }
-                        >
-                          <ReasoningTrigger />
-                          <ReasoningContent>{part.text}</ReasoningContent>
-                        </Reasoning>
-                      )
-                    case "text":
-                      return (
-                        <MessageResponse key={key}>{part.text}</MessageResponse>
-                      )
-                    default: {
-                      if (part.type.startsWith("tool-")) {
-                        const toolPart = part as import("ai").ToolUIPart
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col">
+      <div
+        className={cn(
+          "transition-all duration-500 ease-in-out",
+          isEmpty ?
+            "h-0 overflow-hidden opacity-0 pointer-events-none"
+          : "min-h-0 flex-1 opacity-100",
+        )}
+      >
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    const key = `${message.id}-${i}`
+                    switch (part.type) {
+                      case "reasoning":
                         return (
-                          <Tool key={key}>
-                            <ToolHeader
-                              type={toolPart.type}
-                              state={toolPart.state}
-                            />
-                            <ToolContent>
-                              <ToolInput input={toolPart.input} />
-                              {"output" in toolPart &&
-                                toolPart.output !== undefined && (
-                                  <ToolOutput
-                                    output={toolPart.output}
-                                    errorText={
-                                      "errorText" in toolPart ?
-                                        String(toolPart.errorText)
-                                      : undefined
-                                    }
-                                  />
-                                )}
-                            </ToolContent>
-                          </Tool>
+                          <Reasoning
+                            key={key}
+                            isStreaming={
+                              status === "streaming" &&
+                              message.id === messages.at(-1)?.id
+                            }
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
                         )
+                      case "text":
+                        return (
+                          <MessageResponse key={key}>
+                            {part.text}
+                          </MessageResponse>
+                        )
+                      default: {
+                        if (part.type.startsWith("tool-")) {
+                          const toolPart = part as import("ai").ToolUIPart
+                          return (
+                            <Tool key={key}>
+                              <ToolHeader
+                                type={toolPart.type}
+                                state={toolPart.state}
+                              />
+                              <ToolContent>
+                                <ToolInput input={toolPart.input} />
+                                {"output" in toolPart &&
+                                  toolPart.output !== undefined && (
+                                    <ToolOutput
+                                      output={toolPart.output}
+                                      errorText={
+                                        "errorText" in toolPart ?
+                                          String(toolPart.errorText)
+                                        : undefined
+                                      }
+                                    />
+                                  )}
+                              </ToolContent>
+                            </Tool>
+                          )
+                        }
+                        return null
                       }
-                      return null
                     }
-                  }
-                })}
-              </MessageContent>
-            </Message>
-          ))}
-        </ConversationContent>
-        <ConversationScrollButton />
-      </Conversation>
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+      </div>
 
-      <div className="grid shrink-0 gap-4 pt-4">
+      <div
+        className={cn(
+          "grid shrink-0 gap-4 px-4 pb-4 transition-all duration-500 ease-in-out",
+          isEmpty ? "my-auto w-full max-w-4xl self-center" : "mt-auto w-full",
+        )}
+      >
         {isEmpty && (
-          <Suggestions className="px-4">
+          <ConversationEmptyState
+            className="gap-2 p-0"
+            title="Chat with Winston"
+            description="Ask anything - Winston is ready to help."
+            icon={<BotIcon className="size-8" />}
+          />
+        )}
+        {isEmpty && (
+          <Suggestions className="px-1">
             {suggestions.map((s) => (
               <Suggestion
                 key={s}
@@ -159,7 +177,7 @@ function ChatPage() {
             ))}
           </Suggestions>
         )}
-        <div className="w-full px-4 pb-4">
+        <div className="w-full">
           <PromptInput onSubmit={handleSubmit}>
             <PromptInputBody>
               <PromptInputTextarea placeholder="Ask Winston..." />
