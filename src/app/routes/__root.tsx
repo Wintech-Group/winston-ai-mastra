@@ -3,7 +3,6 @@ import {
   Link,
   Outlet,
 } from "@tanstack/react-router"
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
 import { BotIcon, ShieldIcon } from "lucide-react"
 import type { RouterContext } from "../router-context"
 import { Button } from "@/components/ui/button"
@@ -46,9 +45,9 @@ function RootLayout() {
         <main>
           <Outlet />
         </main>
-        {import.meta.env.DEV && (
+        {/* {import.meta.env.DEV && (
           <TanStackRouterDevtools position="bottom-left" />
-        )}
+        )} */}
       </div>
     )
   }
@@ -115,9 +114,9 @@ function RootLayout() {
           </main>
         </SidebarInset>
       </SidebarProvider>
-      {import.meta.env.DEV && (
+      {/* {import.meta.env.DEV && (
         <TanStackRouterDevtools position="bottom-right" />
-      )}
+      )} */}
     </div>
   )
 }

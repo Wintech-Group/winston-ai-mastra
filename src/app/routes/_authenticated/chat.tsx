@@ -58,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/chat")({
 type ActiveArtifact = { title: string; content: string } | null
 
 /** Toggle to true to load mock data instead of calling the API */
-const USE_MOCK = true
+const USE_MOCK = false
 
 const suggestions = [
   "What can you help me with?",
